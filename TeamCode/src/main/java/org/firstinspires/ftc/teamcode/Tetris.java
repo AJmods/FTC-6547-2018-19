@@ -12,11 +12,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 @TeleOp(name ="Tetris by 6547 Cobalt Colts", group = "Tetris")
 public class Tetris extends LinearOpMode {
 
-    //TODO : fix rotation function, then polish it (now gotta polish it)
-    //TODO : add function where the piece that is currently being controlled will land if it is has been touching a landed piece or the bottom of the screen.
-    //TODO : add a function where the player can push the down button on the gamepad to make the piece in controll go faster
+    //TODO : make the rotation function better
     //TODO : add a score function
-    //TODO : make the screen size customizable, (8x20 might be a bt big)
     //TODO : add a highscore function
 
 
