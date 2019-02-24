@@ -27,10 +27,14 @@ public class Tetris extends LinearOpMode {
 
 
     //from here to runOpMode(), theses are short summaries of the variables, below are all the methods where all the varibles are used, they will have more complex and useful descriptions.
-    boolean lines[][] = new boolean[8][20];  //a 2d array that is an 8x20 "screen", think of each coordinate (example: lines[0][0]) as a pixel.  if the coordinate value is true then █ displays, but if the value is false then ░ displays.
-    //feel free to change the lines[][] varable to whatever you want it to be.  The first value is the Y-axis and the second value is the X-axis.  Just make sure that the the y axis is 3 more than you want it to be.  Trust me on this, that's just how this program works
 
-    String sline[] = new String[(lines.length-1)]; //strings that will be displayed via telemetry, one string per lines.length
+    //change the lines[][] variable to customize the size of the tetris board.  Big boards may result in bugs.  Debug mode is better for smaller boards
+    boolean lines[][] = new boolean[20][10];  //a 2d array that is an 20x10 "screen", think of each coordinate (example: lines[0][0]) as a pixel.  if the coordinate value is true then █ displays, but if the value is false then ░ displays.
+    //feel free to change the lines[][] variable to whatever you want it to be.  The first value is the Y-axis and the second value is the X-axis.  Just make sure that the the y axis is 3 more than you want it to be.  Trust me on this, that's just how this program works
+
+    String sline[] = new String[(lines.length-1)]; //stands for string lines.  these are the strings that will be displayed via telemetry, one string per lines.length
+    int spaces=39; //spaces added before the board is displayed in order to get the board in the center of the screen.
+    String bigSpace="";
     int nextDecider=(int) (Math.random()*7);
     int decider=(int) (Math.random()*7);
     int pieces[] = new int[4]; //the coordinates for a piece, all pieces take up 4 values from lines[][].  go to the getPiece() Method for more information about this
@@ -60,7 +64,6 @@ public class Tetris extends LinearOpMode {
 
     //int realFrameRate = 0;
     //int frameRate = 0;
-    //test
 
     String frameRate="";
     int frame = 0;
@@ -70,8 +73,8 @@ public class Tetris extends LinearOpMode {
     ElapsedTime frametime = new ElapsedTime();
 
     public void runOpMode() { //before reading anything under runOpMode(), read all the methods that are called during this method first
-        //check if the size of lines[][] is valid
-        if (lines.length > 20)
+        //old code to check if the size of lines[][] is valid
+        /*if (lines.length > 20)
         {
             telemetry.log().add("Invalid lineY size, changing it to lines[20][" + lines[0].length + "]");
             lines = new boolean[10][lines[0].length];
@@ -88,7 +91,13 @@ public class Tetris extends LinearOpMode {
             telemetry.log().add("Invalid lineX size, chaning it o lines["+lines.length+"][100]");
             lines = new boolean[lines.length][100];
         }
+        */
+        //calulate spaces
+        spaces-=(lines[0].length-4)*1.5;
+        for (int i =0; i< spaces; i++) bigSpace+=" ";
+        //prep board
         for (int i = 0; i < lines.length; i++) for (int j = 0; j < lines[0].length; j++) lines[i][j] = false; //sets the entire screen to false, so it all will display  ░ once the displayStrings command is called.
+        for (int i = 0; i < lines[0].length; i++) lines[lines.length-1][i]=true; //set floor
         for (int i = 0; i < sline.length; i++) sline[i] = ""; //sets all the sline[] values to "" so it can works with the makeStrings() method.
         nextPieceText[0] = "Next Piece:";
         telemetry.log().add("Tetris by 6547 Cobalt Colts");
@@ -98,10 +107,10 @@ public class Tetris extends LinearOpMode {
         telemetry.log().add("Push B and Y simultaneously to enter debug mode, otherwise push the start button");
         while (!isStarted())
         {
-            if (gamepad1.y && gamepad1.b) {
-                debugMode = true;
-                telemetry.log().add("Debug mode enabled");
-                waitForStart();
+            if (gamepad1.y && gamepad1.b) { //if y or b is pressed, a
+                debugMode = !debugMode;
+                telemetry.log().add((debugMode) ? "Debug mode enabled" : "Debug mode disabled");
+                while (!isStarted() && gamepad1.y && gamepad1.b); //wait for
             }
         }
 
@@ -156,8 +165,7 @@ public class Tetris extends LinearOpMode {
                     debugModeText = ((pieceState==notTouching) ? "Piece is not touching" : (pieceState==touching) ? "Piece is touching" : (pieceState==touchedFor1Second) ? "Piece touched for one second" : "Piece state is unknown");
                     telemetry.log().add(debugModeText);
                 }
-                makeStrings();
-                displayStrings();
+
             }  //keeps running until the piece hits something
             runtime.reset();
             pieceState = notTouching;
@@ -181,7 +189,7 @@ public class Tetris extends LinearOpMode {
     {
         for (int i = 0; i < 4; i++)
         {
-            if ((pieces[i]/100) == (sline.length-1)) return true;
+            if ((pieces[i]/100) == (lines.length-3)) return true;
             else if (lines[(pieces[i]/100) + 1][pieces[i]%100] && !contains(pieces, (pieces[i]+100))) return true;
         }
         return false;
@@ -244,15 +252,16 @@ public class Tetris extends LinearOpMode {
                 clearStrings();
             }
             else
-            {if (debugMode)
             {
-                telemetry.log().add("Dpad right pushed");
-                debugModeText = "Dpad right pushed";
-            }
+                if (debugMode)
+                {
+                    telemetry.log().add("Dpad right pushed");
+                    debugModeText = "Dpad right pushed";
+                }
                 resetStrings();
                 setLines(1,0);
-                makeStrings();
-                displayStrings();
+                //makeStrings();
+                //displayStrings();
                 if (pieceHittingSomething() && pieceState==touching && runtime.seconds() > landingTime) clearStrings();
                 else resetStrings();
             }
@@ -279,15 +288,16 @@ public class Tetris extends LinearOpMode {
                 clearStrings();
             }
             else
-            {if (debugMode)
             {
-                telemetry.log().add("Dpad left pushed");
-                debugModeText = "Dpad left pushed";
-            }
+                if (debugMode)
+                {
+                    telemetry.log().add("Dpad left pushed");
+                    debugModeText = "Dpad left pushed";
+                }
                 resetStrings();
                 setLines(-1,0);
-                makeStrings();
-                displayStrings();
+                //makeStrings();
+                //displayStrings();
                 if (pieceHittingSomething() && pieceState==touching && runtime.seconds() > landingTime) clearStrings();
                 else resetStrings();
             }
@@ -317,8 +327,8 @@ public class Tetris extends LinearOpMode {
 
                     setLines(0,-1);
 
-                    makeStrings();
-                    displayStrings();
+                    //makeStrings();
+                    //displayStrings();
                     otherTime.reset();
                 }
             }
@@ -348,41 +358,17 @@ public class Tetris extends LinearOpMode {
     }
 
     public void getPiece() {
-        if (contains(lines[lines.length-3], true)) //if the bottom line is filled (every value of lines[5] is true), then delete line 5, lower all the lines down by 1, add an empty line[0] by setting every value of line[0] to false.
-        {  if (debugMode)
+        if (contains(lines[lines.length-3], true)) //if the bottom line is filled lower all the lines down by 1 and make lines[0] empty by setting every value of line[0] to false.
         {
-            telemetry.log().add("cleared line");
-            debugModeText = "cleared line";
-        }
-            for (int i = 0; i < lines[0].length; i++) lines[lines.length-3][i] = false;
-            boolean[] temp;
-            boolean[] temp2;
-            temp = lines[0];
-            lines[0] = lines[(lines.length-3)];
-            temp2 = lines[1];
-            lines[1] = temp2;
-            for (int i = 2; i < (lines.length-3); i++){
-                temp = lines[i];
-                lines[i] = temp2;
-                temp2 = lines[i+1];
-                lines[i+1] = temp;
-
+            if (debugMode)
+            {
+                telemetry.log().add("cleared line");
+                debugModeText = "cleared line";
             }
-            /*temp = lines[0];
-            lines[0] = lines[5];
-            temp2 = lines[1];
-            lines[1] = temp;
-            temp = lines[2];
-            lines[2] = temp2;
-            temp2 = lines[3];
-            lines[3] = temp;
-            temp = lines[4];
-            lines[4] = temp2;
-            temp2 = lines[5];
-            lines[5] = temp;
-            makeStrings();
-            displayStrings();
-            */
+            boolean[][] templines=lines;
+            for (int i=lines.length-1; i >0; i--) lines[i]=lines[i-1]; //lower everything in the board by 1
+            for (int i=0; i < lines[0].length; i++) lines[0][i]=false; //clear first line
+
         }
         decider = nextDecider; //comment out the Math.random() part and replace it with 0 for debugging purposes
         nextDecider = (int) (Math.random() * 7);
@@ -601,6 +587,8 @@ public class Tetris extends LinearOpMode {
                 for (int i = 0; i < 4; i++) pieces[i] = (tempPiece[i] + pieceModiferx + pieceModifery);
                 rotation=0;
             }
+            makeStrings();
+            displayStrings();
         }
         else
         {
@@ -620,18 +608,21 @@ public class Tetris extends LinearOpMode {
         {
             pieces[i]-=(yModifier*100);
             pieces[i]+=xModifier;
-            if (pieces[i] >= 800) pieces[i]-=100;
+            if (pieces[i] >= (lines.length*100)) pieces[i]-=100;
             //telemetry.log().add(Integer.toString(pieces[i]));
             int vertical = (pieces[i] / 100);
             //telemetry.log().add("Vertical is " + vertical); //used for debugging
             int horizontal = (pieces[i] % 100);
             lines[vertical][horizontal]=true;
         }
+        makeStrings();
+        displayStrings();
 
     }
     public void makeStrings() //compose all the strings,
     {
         clearStrings();
+        for (int i =0; i < sline.length; i++) sline[i] +=bigSpace;
         for (int i =0; i < sline.length; i++) for (int j = 0; j < lines[0].length; j++)
             sline[i] += (!lines[i][j]) ? "░" : "█";
         //the rest of this method puts sline[] into one string, along with the Debug mode text and framerate
@@ -690,7 +681,7 @@ public class Tetris extends LinearOpMode {
 
     public void gameOver() //gets called when the game is over
     {
-        debugModeText = "You Lose";
+        debugModeText = "GAME OVER";
         telemetry.log().add("GAME OVER");
         DisplayThis= "GAME OVER \n" + DisplayThis;
         displayStrings(); //display the strings
