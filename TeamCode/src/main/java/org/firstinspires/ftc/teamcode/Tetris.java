@@ -12,8 +12,11 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 @TeleOp(name ="Tetris by 6547 Cobalt Colts", group = "Tetris")
 public class Tetris extends LinearOpMode {
 
-    //TODO : make the rotation function better
+    //TODO : fix rotation function, then polish it (now gotta polish it)
+    //TODO : add function where the piece that is currently being controlled will land if it is has been touching a landed piece or the bottom of the screen.
+    //TODO : add a function where the player can push the down button on the gamepad to make the piece in controll go faster
     //TODO : add a score function
+    //TODO : make the screen size customizable, (8x20 might be a bt big)
     //TODO : add a highscore function
 
 
@@ -98,9 +101,9 @@ public class Tetris extends LinearOpMode {
         for (int i = 0; i < sline.length; i++) sline[i] = ""; //sets all the sline[] values to "" so it can works with the makeStrings() method.
         nextPieceText[0] = "Next Piece:";
         telemetry.log().add("Tetris by 6547 Cobalt Colts");
-        telemetry.log().add("");
+         telemetry.log().add("");
+        telemetry.log().add("Scroll Down to revel the full screen");
         telemetry.log().add("Use the Left, Right, and Down D-pad buttons to move pieces and the X button to rotate ");
-        telemetry.log().add("");
         telemetry.log().add("Push B and Y simultaneously to enter debug mode, otherwise push the start button");
         while (!isStarted())
         {
@@ -318,7 +321,7 @@ public class Tetris extends LinearOpMode {
             while (!pieceHittingSomething())
             {
 
-                if (otherTime.seconds() > .3)
+                if (otherTime.seconds() > .03)
                 {
                     resetStrings();
 
@@ -329,6 +332,7 @@ public class Tetris extends LinearOpMode {
                     otherTime.reset();
                 }
             }
+            setLines(0,1);
         }
         /*while (gamepad1.dpad_down && !pieceHittingSomething() && opModeIsActive())
         {
@@ -355,7 +359,7 @@ public class Tetris extends LinearOpMode {
     }
 
     public void getPiece() {
-        if (contains(lines[lines.length-3], true)) //if the bottom line is filled lower all the lines down by 1 and make lines[0] empty by setting every value of line[0] to false.
+        if (contains(lines[lines.length-3], true)) //if the bottom line is filled (every value of lines[5] is true), then delete line 5, lower all the lines down by 1, add an empty line[0] by setting every value of line[0] to false.
         {
             if (debugMode)
             {
@@ -564,6 +568,8 @@ public class Tetris extends LinearOpMode {
         resetStrings();
         if (!pieceHittingSomething())
         {
+            if (!pieceInBoundsLeft()) setLines(1,0);
+            else if (!pieceInBoundsRight()) setLines(-1,0);
             if (rotation == 0)
             {
                 for (int i = 0; i < 4; i++) pieces[i] = (pieces90[i] + pieceModiferx + pieceModifery);
@@ -586,6 +592,7 @@ public class Tetris extends LinearOpMode {
             }
             makeStrings();
             displayStrings();
+        
         }
         else
         {
