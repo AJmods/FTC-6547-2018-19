@@ -202,7 +202,13 @@ public class theColt extends LinearOpMode{
     double rotationOffset=0;
     final double constantOffsetX=0;
     final double constantOffsetY=0;
-
+    
+    double XDifference=0;
+    double YDifference=0;
+    boolean isRobotInX=false;
+    boolean isRobotInY=false;
+    
+    double lastPosXrev=0;
     public theColt()
     {
         is11874Bot=false;
@@ -257,12 +263,20 @@ public class theColt extends LinearOpMode{
     }
     public void raiseRobot()
     {
-        hanger.setPower(.5);
+        /*hanger.setPower(.5);
         runtime.reset();    // Reset the timer
         while (hanger.getCurrentPosition()<-1000 && opModeIsActive() && runtime.seconds()<=6)
         {
             telemetry.addData("hanger motor position", hanger.getCurrentPosition());
             outputTelemetry();
+        }
+        hanger.setPower(0);
+        */
+        hanger.setPower(.5);
+        while (opModeIsActive() && !isLimitSwitchPressed())
+        {
+            telemetry.addData("limit switch pressed?", isLimitSwitchPressed());
+            telemetry.update();
         }
         hanger.setPower(0);
     }
@@ -302,9 +316,9 @@ public class theColt extends LinearOpMode{
     }
     public void getToVuforiaTarget()
     {
-        driveNoVuforia(2.5,-.5);
+        //driveNoVuforia(2.5,-.5);
         sleep(.5);
-        DriveLeft(.2);
+        //DriveLeft(.2);
         runtime.reset();
         while (!isVuforiaImageThere() && runtime.seconds() < 3 && opModeIsActive())
         {
@@ -768,26 +782,21 @@ public class theColt extends LinearOpMode{
         frontCraters.setName(VuforiaImage_MARS);
         VuforiaTrackable backSpace = targetsRoverRuckus.get(3);
         backSpace.setName(VuforiaImage_SPACE);
-
         // For convenience, gather together all the trackable objects in one easily-iterable collection
         allTrackables = new ArrayList<VuforiaTrackable>();
         allTrackables.addAll(targetsRoverRuckus);
-
         final int CAMERA_FORWARD_DISPLACEMENT  = 110;   // eg: Camera is 110 mm in front of robot center
         final int CAMERA_VERTICAL_DISPLACEMENT = 200;   // eg: Camera is 200 mm above ground
         final int CAMERA_LEFT_DISPLACEMENT     = 0;     // eg: Camera is ON the robot's center line
-
         OpenGLMatrix phoneLocationOnRobot = OpenGLMatrix
                 .translation(CAMERA_FORWARD_DISPLACEMENT, CAMERA_LEFT_DISPLACEMENT, CAMERA_VERTICAL_DISPLACEMENT)
                 .multiplied(Orientation.getRotationMatrix(EXTRINSIC, YZX, DEGREES,
                         CAMERA_CHOICE == FRONT ? 0 : 0, 0, 0));
-
         //  Let all the trackable listeners know where the phone is.
         for (VuforiaTrackable trackable : allTrackables)
         {
             ((VuforiaTrackableDefaultListener)trackable.getListener()).setPhoneInformation(phoneLocationOnRobot, parameters.cameraDirection);
         }
-
         targetsRoverRuckus.activate(); //best to move to after WaitForStart();
         */
     }
@@ -876,7 +885,6 @@ public class theColt extends LinearOpMode{
                         return imu.getCalibrationStatus().toString();
                     }
                 });
-
         telemetry.addLine()
                 .addData("heading", new Func<String>() {
                     @Override public String value() {
@@ -893,7 +901,6 @@ public class theColt extends LinearOpMode{
                         return formatAngle(angles.angleUnit, angles.thirdAngle);
                     }
                 });
-
         telemetry.addLine()
                 .addData("grvty", new Func<String>() {
                     @Override public String value() {
@@ -1062,16 +1069,16 @@ public class theColt extends LinearOpMode{
         RightFront.setPower(speed * Math.sin(desiredAngle-robotAngle) - rightX);
         LeftBack.setPower(speed * Math.sin(desiredAngle-robotAngle) + rightX);
         RightBack.setPower(speed * Math.cos(desiredAngle-robotAngle) - rightX);
-        telemetry.log().add("averge encoder" + averageEncoder());
-        while (opModeIsActive() && Math.abs(averageEncoder())<Math.abs(drivingDistanceInEncoderTicks))
-        {
+        //telemetry.log().add("averge encoder" + averageEncoder());
+        //while (opModeIsActive() && Math.abs(averageEncoder())<Math.abs(drivingDistanceInEncoderTicks))
+        //{
             robotAngle = Math.toRadians(getIMUAngle());
             LeftFront.setPower(speed * Math.cos(desiredAngle-robotAngle) + rightX);
             RightFront.setPower(speed * Math.sin(desiredAngle-robotAngle) - rightX);
             LeftBack.setPower(speed * Math.sin(desiredAngle-robotAngle) + rightX);
             RightBack.setPower(speed * Math.cos(desiredAngle-robotAngle) - rightX);
             outputTelemetry();
-        }
+       // }
         stopRobot();
 
     }
@@ -1124,19 +1131,19 @@ public class theColt extends LinearOpMode{
             tfod.shutdown();
         }
         switchXandY();
-        if (goldMineralLocation!=GOLD_MINERAL_CENTER) TurnPID(0, 2);
+        if (goldMineralLocation!=GOLD_MINERAL_CENTER) TurnPID(0, 1);
         if (mineralLocation==GOLD_MINERAL_RIGHT)
         {
             //setEquation(new double[] {38}); //47
             //driveOverLinePID(20, 5, 3);
             //DriveToPointPID(30,38, 3);
-            DriveToPointPID(18,38, 2);
+            DriveToPointPID(18,38, 1.5);
             //telemetry.log().add("First movement done");
             //strafeToDistanceXPID(30, 2);
             //telemetry.log().add("Second movement done");
             //setEquation(new double[] {3});
             //driveOverLinePID(23, 5, 3);
-            DriveToPointPID(20,5, 2);
+            DriveToPointPID(20,5, 1.2);
             //telemetry.log().add("Third movement done");
             ///strafeToDistanceXPID(5, 3);
             //telemetry.log().add("Forth movement done");
@@ -1147,11 +1154,11 @@ public class theColt extends LinearOpMode{
         {
             //setEquation(new double[] {15}); //25
             //driveOverLinePID(30, 5, 3);
-            DriveToPointPID(50,13, 3);
-            DriveToPointPID(34,15, 2);
+            DriveToPointPID(50,13, 1.5);
+            DriveToPointPID(34,11, .8);
             //setEquation(new double[] {3});
             // driveOverLinePID(24, 5, 3);
-            DriveToPointPID(24,5, 2);
+            DriveToPointPID(24,5, 1);
         }
         else if (goldMineralLocation==GOLD_MINERAL_CENTER)
         {
@@ -1187,14 +1194,15 @@ public class theColt extends LinearOpMode{
         {
             tfod.shutdown();
         }
-        if (goldMineralLocation!=GOLD_MINERAL_CENTER) TurnPID(0, 3);
+        if (goldMineralLocation!=GOLD_MINERAL_CENTER) TurnPID(0, 1);
         if (goldMineralLocation==GOLD_MINERAL_RIGHT)
         {
             //strafeToDistanceXPID(39,3);
             //strafeToDistanceYPID(24,3);
              DriveToPointPID(24,40,2);
-             DriveToPointPID(30,40,2);
-             DriveToPointPID(63,3,4);
+             DriveforLength(1,.5);
+             //DriveToPointPID(35,40,2);
+             DriveToPointPID(63,3,2);
             //setEquation(new double[] {41}); //47
            // driveOverLinePID(24,5,3);
             //telemetry.log().add("First movement done");
@@ -1210,10 +1218,10 @@ public class theColt extends LinearOpMode{
             //setEquation(new double[] {20}); //25
             //driveOverLinePID(44, 5,3);
             DriveToPointPID(46,20, 1.5);
-            DriveToPointPID(41,20, 1.5);
-            DriveToPointPID(49,15, 1);
+            DriveToPointPID(41,20, 1);
+            DriveToPointPID(49,15, .5);
             //setEquation(new double[] {20}); //25
-            DriveToPointPID(63,3,2);
+            DriveToPointPID(63,3,1.2);
             //driveOverLinePID(49, 5,3);
             //strafeToDistanceXPID(3, 3);
             // setEquation(new double[] {3}); //25
@@ -1224,7 +1232,7 @@ public class theColt extends LinearOpMode{
             DriveforLength(1, -.5);
             DriveforLength(1, .5);
             TurnPID(0,3);
-            DriveToPointPID(63,3,3.5);
+            DriveToPointPID(63,3,2);
             //setEquation(new double[] {30}); //36
             //driveOverLinePID(34,5,1.5);
             //DriveToPointPID(34,34,1.5);
@@ -1377,7 +1385,7 @@ public class theColt extends LinearOpMode{
         currentEquation+=Double.toString(terms[terms.length-1]);
         return currentEquation;
     }
-    public void driveOverLinePID(double x, double seconds, double ratio)
+    /*public void driveOverLinePID(double x, double seconds, double ratio)
     {
         driveOverLinePID(terms, x, seconds, ratio);
     }
@@ -1430,7 +1438,8 @@ public class theColt extends LinearOpMode{
         stopRobot();
         telemetry.log().add("STOPPED");
     }
-    public void DriveToPointPID(double x, double y, double seconds)
+    */
+   public void DriveToPointPID(double x, double y, double seconds)
     {
         MiniPID miniPID = new MiniPID(.055, 0.000, 0.04);
         miniPID.setSetpoint(0);
@@ -1451,7 +1460,7 @@ public class theColt extends LinearOpMode{
 
         double actualY=0;
         double outputY=0;
-    
+
         runtime.reset();
         while (opModeIsActive() && runtime.seconds()<seconds) {
             actualX = getRobotPositionX();
@@ -1470,110 +1479,13 @@ public class theColt extends LinearOpMode{
             telemetry.addData("outputX", outputX);
             telemetry.addData("outputY", outputY);
             telemetry.update();
-            //if (Math.abs(getIMUAngle())>5) TurnPID(0,1);
+            if (Math.abs(getIMUAngle())>10)
+            {
+                TurnPID(0,.5);
+                seconds+=.5;
+            }
         }
         stopRobot();
-    }
-    public void driveOverLine(double power, double minX, double maxX, boolean goLeft)
-    {
-        driveOverLine(terms, power, minX, maxX, goLeft, 3);
-    }
-    public void driveOverLine(double power, double minX, double maxX, boolean goLeft, double ratio)
-    {
-        driveOverLine(terms, power, minX, maxX, goLeft, ratio);
-    }
-    public void driveOverLine(double[] equation, double power, double minX, double maxX, boolean goLeft, double ratio)
-    {
-        terms=equation;
-        double currentXPos;
-        double disiredAngle;
-        if (goLeft && opModeIsActive())
-        {
-
-            do
-            {
-                currentXPos=getRobotPositionX();
-                disiredAngle=getDisiredAngle(currentXPos, true, ratio);
-                DriveFieldRealtiveSimple(power, disiredAngle);
-                telemetry.addData("disired2 Angle", disiredAngle);
-                telemetry.addData("other angle", disiredAngle=getDisiredAngle(currentXPos, false,ratio));
-                telemetry.addData("current X pos", currentXPos);
-                telemetry.addData("current Y pos", getRobotPositionY());
-                telemetry.addData("MIN", minX);
-                telemetry.addData("MAX", maxX);
-                telemetry.addData("Current Y value", calculateValue(currentXPos));
-                telemetry.addData("going Left", goLeft);
-                telemetry.update();
-            } while (currentXPos>=minX && opModeIsActive());
-        }
-        else if (opModeIsActive())
-        {
-            do
-            {
-                currentXPos=getRobotPositionX();
-                disiredAngle=getDisiredAngle(currentXPos, false,ratio);
-                DriveFieldRealtiveSimple(power, disiredAngle);
-                telemetry.addData("disired Angle", disiredAngle);
-                telemetry.addData("current X pos", currentXPos);
-                telemetry.addData("current Y pos", getRobotPositionY());
-                telemetry.addData("MIN", minX);
-                telemetry.addData("MAX", maxX);
-                telemetry.addData("Current Y value", calculateValue(currentXPos));
-                telemetry.addData("going Left", goLeft);
-                telemetry.addData("PositionX", getRobotPositionX());
-                telemetry.addData("PositionY", getRobotPositionY());
-                telemetry.update();
-            } while (currentXPos<=maxX && opModeIsActive());
-        }
-        stopRobot();
-        telemetry.log().add("STOPPED");
-    }
-    public void driveOverLineOnlyX(double power, double minX, double maxX, boolean goLeft, double ratio)
-    {
-        driveOverLine(terms, power, minX, maxX, goLeft, ratio);
-    }
-    public void driveOverLineOnlyX(double[] equation, double power, double minX, double maxX, boolean goLeft, double ratio)
-    {
-        terms=equation;
-        double currentXPos;
-        double disiredAngle;
-        if (goLeft && opModeIsActive())
-        {
-
-            do
-            {
-                currentXPos=getRobotPositionX();
-                disiredAngle=getDisiredAngleNoCorrection(currentXPos, true, ratio);
-                DriveFieldRealtiveSimple(power, disiredAngle);
-                telemetry.addData("disired2 Angle", disiredAngle);
-                telemetry.addData("other angle", disiredAngle=getDisiredAngleNoCorrection(currentXPos, false,ratio));
-                telemetry.addData("current X pos", currentXPos);
-                telemetry.addData("MIN", minX);
-                telemetry.addData("MAX", maxX);
-                telemetry.addData("Current Y value", calculateValue(currentXPos));
-                telemetry.addData("going Left", goLeft);
-                telemetry.update();
-            } while (currentXPos>=minX && opModeIsActive());
-        }
-        else if (opModeIsActive())
-        {
-            do
-            {
-                currentXPos=getRobotPositionX();
-                disiredAngle=getDisiredAngleNoCorrection(currentXPos, false,ratio);
-                DriveFieldRealtiveSimple(power, disiredAngle);
-                telemetry.addData("disired Angle", disiredAngle);
-                telemetry.addData("current X pos", currentXPos);
-                telemetry.addData("MIN", minX);
-                telemetry.addData("MAX", maxX);
-                telemetry.addData("Current Y value", calculateValue(currentXPos));
-                telemetry.addData("going Left", goLeft);
-                telemetry.addData("PositionX", getRobotPositionX());
-                telemetry.update();
-            } while (currentXPos<=maxX && opModeIsActive());
-        }
-        stopRobot();
-        telemetry.log().add("STOPPED");
     }
     public void DriveFieldRealtiveSimple(double power, double angle)
     {
@@ -1596,94 +1508,6 @@ public class theColt extends LinearOpMode{
     {
         setOffset(RobotOffsetX, RobotOffsetY);
         rotationOffset=RobotRotationOffset;
-    }
-    public void setEquationResolution(double resolution)
-    {
-        equationResolution=resolution;
-    }
-    public double getDisiredAngle(double x, boolean goLeft)
-    {
-        return getDisiredAngle(x, goLeft, 3);
-    }
-    public double getDisiredAngle(double x, boolean goLeft, double ratio)
-    {
-        //double disiredY = calculateValue(x);
-        // double minX = x-equationResolution;
-        // double minY = calculateValue(minX);
-        // double maxX = x+equationResolution;
-        // double maxY = calculateValue(maxX);
-        // telemetry.addData("MINX", minX);
-        // telemetry.addData("MAXX", maxX);
-        // telemetry.addData("MINY", minY);
-        // telemetry.addData("MAXY", maxY);
-        // double slope = getSlope(minX, minY, maxX, maxY);
-        // telemetry.addData("SLOPE", slope);
-        // double angle = -Math.toDegrees(Math.atan(slope));
-        // if (goLeft)
-        // {
-        //     angle = invertAngle(angle);
-        //     double correctedAngle= make180(correctDisiredAngle(angle, x, 10));
-
-        //     return correctedAngle;
-        // }
-        double angle=correctDisiredAngle(0, x,3);
-        if (goLeft)
-        {
-            angle=reflectAngle(angle);
-        }
-        return angle+rotationOffset;
-    }
-    public double getDisiredAngleNoCorrection(double x, boolean goLeft)
-    {
-        return getDisiredAngle(x, goLeft, 3);
-    }
-    public double getDisiredAngleNoCorrection(double x, boolean goLeft, double ratio)
-    {
-        double disiredY = calculateValue(x);
-        double minX = x-equationResolution;
-        double minY = calculateValue(minX);
-        double maxX = x+equationResolution;
-        double maxY = calculateValue(maxX);
-        telemetry.addData("MINX", minX);
-        telemetry.addData("MAXX", maxX);
-        telemetry.addData("MINY", minY);
-        telemetry.addData("MAXY", maxY);
-        double slope = getSlope(minX, minY, maxX, maxY);
-        telemetry.addData("SLOPE", slope);
-        double angle = -Math.toDegrees(Math.atan(slope));
-        if (goLeft)
-        {
-            angle = invertAngle(angle);
-            double correctedAngle= make180(correctDisiredAngle(angle, x, 10));
-
-            return correctedAngle;
-        }
-        return angle+rotationOffset;
-    }
-    public double make180(double angle)
-    {
-        while (angle>180) angle-=180;
-        while (angle<-180) angle+=180;
-        return angle;
-    }
-    public double correctDisiredAngle(double angle, double x, double ratio)
-    {
-        double disiredY=calculateValue(x);
-        double difference=disiredY-getRobotPositionY();
-        double corectionAngle=Math.toDegrees(Math.atan(difference/ratio));
-        return angle+corectionAngle;
-    }
-    public double reflectAngle(double angle)
-    {
-        if (angle>=0) angle+=(2*(90-angle));
-        else angle+= (2*(-90-angle));
-        return angle;
-    }
-    public double invertAngle(double angle)
-    {
-        if (angle>=0) angle-=180;
-        else angle+=180;
-        return angle;
     }
     public double getRobotPositionXSonar()
     {
@@ -1712,9 +1536,9 @@ public class theColt extends LinearOpMode{
         if (distance>1440)
         {
             telemetry.log().add("overshot X distance");
-            return lastPosX;
+            return lastPosXrev;
         }
-        lastPosX=distance;
+        lastPosXrev=distance;
         return distance;
     }
     public double getRobotPositionX()
@@ -1733,6 +1557,29 @@ public class theColt extends LinearOpMode{
         if (distance2m > 130) {
             distanceBest = distanceSonar;   // If the Rev returns over X, ignore it
         }
+        /*if (isRobotInX)
+        {
+            if (distanceBest>lastPosX+12)
+            {
+                telemetry.log().add("ROBOT LEFT ON X DISTANCE");
+                isRobotInX=false;
+                lastPosX=distanceBest;
+                return distanceBest;
+            }
+            else
+            {
+                distanceBest+=XDifference;
+            }
+        }
+        if (distanceBest<lastPosX-12 && !isRobotInX)
+        {
+            telemetry.log().add("ROBOT DETECTED ON X DISTANCE");
+            isRobotInX=true;
+            XDifference=lastPosX-distanceBest;
+            lastPosX=distanceBest;
+            distanceBest-=XDifference;
+        }*/
+        lastPosX=distanceBest;
         return distanceBest;
     }
     public double getRobotPositionY()
@@ -1755,38 +1602,41 @@ public class theColt extends LinearOpMode{
         if (distance>144)
         {
             telemetry.log().add("overshot Y distance");
-            return lastPosY;
+            distance=lastPosY;
         }
+        /*if (isRobotInY)
+        {
+            if (distance>lastPosY+12)
+            {
+                telemetry.log().add("ROBOT LEFT ON Y DISTANCE");
+                isRobotInY=false;
+                lastPosY=distance;
+                return distance;
+            }
+            else
+            {
+                distance+=YDifference;
+            }
+        }
+        else if (distance<lastPosY-12 && !isRobotInY)
+        {
+            telemetry.log().add("ROBOT DETECTED ON Y DISTANCE");
+            isRobotInY=true;
+            YDifference=lastPosY-distance;
+            lastPosY=distance;
+            distance-=YDifference;
+        }*/
         lastPosY=distance;
         return distance;
     }
     public boolean isLimitSwitchPressed()
     {
-        if (limitSwitch.getVoltage()>2) return true;
+        if (limitSwitch.getVoltage()>2.8) return true;
         else return false;
     }
     double getSlope(double x1, double y1, double x2, double y2)
     {
         return (y1-y2)/(x1-x2);
-    }
-    double calculateValue(double x)
-    {
-        double answer=0;
-        for (int i =1; i<=terms.length; i++)
-        {
-            answer+=(Math.pow(x, i-1) * terms[terms.length-i]);
-        }
-        return  answer;
-    }
-    void loadEncoders(DcMotor[] motors)
-    {
-        for (DcMotor motor: motors) if (motor.getCurrentPosition()!=0) encoderMotors.add(motor); //if the encoder value reads zero than the encoder isn't working
-    }
-    double averageEncoder()
-    {
-        double motorposition=0;
-        for (DcMotor motor : encoderMotors) motorposition+=motor.getCurrentPosition();
-        return motorposition/encoderMotors.size();
     }
     double averageDrivetrainEncoder()
     {
@@ -1797,95 +1647,6 @@ public class theColt extends LinearOpMode{
         motorposition+=RightFront.getCurrentPosition();
         if (Double.isNaN(motorposition/4)) return 0;
         else return motorposition/4;
-    }
-    public void driveNoVuforia(double feet, double power)
-    {
-        if (power>=0) feet = Math.abs(feet);
-        else feet = -Math.abs(feet);
-        zeroEncoders();
-        driveForward(power);
-        double inches = feet*12;
-        double encodersPerInch = encoderTicksPerRotation/circumferenceOfWheel;
-        double drivingDistanceInEncoderTicks = encodersPerInch*inches;
-        if (drivingDistanceInEncoderTicks>=0) while (RightBack.getCurrentPosition() <=drivingDistanceInEncoderTicks && opModeIsActive())
-        {
-            telemetry.addData("Encoder ticks to drive (positve)", drivingDistanceInEncoderTicks);
-            telemetry.addData("IMU angle", getIMUAngle());
-            outputTelemetry();
-        }
-        else while (RightBack.getCurrentPosition() >=drivingDistanceInEncoderTicks && opModeIsActive())
-        {
-            telemetry.addData("Encoder ticks to drive (negitive)", drivingDistanceInEncoderTicks);
-            telemetry.addData("IMU angle", getIMUAngle());
-            outputTelemetry();
-        }
-        stopRobot();
-    }
-    public void Turnn(double targetAngle) //turning code from last year
-    {
-        double angleDiference=targetAngle-getIMUAngle();
-        double MotorPower=1;
-        if (getIMUAngle() > targetAngle)
-        {
-            while (getIMUAngle() > (targetAngle+2) && opModeIsActive() && gamepad1.left_stick_y > -.1 && gamepad1.left_stick_y < .1)
-            {if (getIMUAngle() > 90)
-            {
-                MotorPower=1;
-            }
-            else if (getIMUAngle() > 30)
-            {
-                MotorPower=.4;
-            }
-            else
-            {
-                MotorPower=(1-(Math.abs(-angleDiference)/angleDiference))/2.5;
-            }
-                if (MotorPower <.2) MotorPower=.20;
-                telemetry.addData("Motor Power is ",MotorPower);
-                telemetry.update();
-                turnLeft(MotorPower);
-            }
-
-        }
-        else
-        {
-
-            while (getIMUAngle() < (targetAngle-20) && opModeIsActive() && gamepad1.left_stick_y > -.1 && gamepad1.left_stick_y < .1)
-            {if (getIMUAngle() < -90)
-            {
-                MotorPower=1;
-            }
-            else if (getIMUAngle() < -30)
-            {
-                MotorPower=.4;
-            }
-            else
-            {
-                MotorPower=Math.abs((1-((Math.abs(getIMUAngle()-angleDiference)*-1)/angleDiference)))/2.5;
-            }
-                if (MotorPower <.2) MotorPower=.2;
-                telemetry.addData("Motor Power is ",MotorPower);
-                telemetry.update();
-                turnLeft(-MotorPower);
-            }
-        }
-        stopRobot();
-    }
-    void turnForSeconds(double targetAngle, double seconds)
-    {
-        double angleDiference=targetAngle-getIMUAngle();
-        if (Math.abs(angleDiference)>180) //make the angle difference less then 180 to remove unnecessary turning
-        {
-            angleDiference+=(angleDiference>=0) ? -360 : 360;
-        }
-        runtime.reset();
-        while (runtime.seconds() < seconds && opModeIsActive()) {
-            double power = -(getIMUAngle()/angleDiference);
-            telemetry.addData("power", power);
-            outputTelemetry();
-            turnLeft(power);
-        }
-        stopRobot();
     }
     void zeroEncoders()
     {
@@ -1903,20 +1664,6 @@ public class theColt extends LinearOpMode{
         hanger.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         hanger.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
-    public void brakeMotors()
-    {
-        LeftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        RightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        LeftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        RightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-    }
-    public void floatMotors()
-    {
-        LeftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        RightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        LeftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        RightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-    }
     public void driveForward(double power)
     {
         LeftFront.setPower(power);
@@ -1927,12 +1674,6 @@ public class theColt extends LinearOpMode{
     public void turnLeft(double power) {
         LeftFront.setPower(power);
         RightFront.setPower(-power);
-        LeftBack.setPower(power);
-        RightBack.setPower(-power);
-    }
-    public void DriveLeft(double power) {
-        LeftFront.setPower(-power);
-        RightFront.setPower(power);
         LeftBack.setPower(power);
         RightBack.setPower(-power);
     }
