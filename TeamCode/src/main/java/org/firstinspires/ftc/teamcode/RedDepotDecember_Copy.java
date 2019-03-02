@@ -33,7 +33,16 @@ public class RedDepotDecember_Copy extends theColt {
         zeroEncoders();
         
         angleZzeroValue=45;
-
+        
+         hanger.setPower(.7);
+        while (opModeIsActive() && !isLimitSwitchPressed())
+        {
+            telemetry.addData("limit switch pressed?", isLimitSwitchPressed());
+            telemetry.addData("limit switch volatage", limitSwitch.getVoltage());
+            telemetry.update();
+        }
+        hanger.setPower(0);
+        telemetry.log().add("hanger calibrated");
         tfod.activate();
         lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.HEARTBEAT_WHITE);
         while (!isStarted()) //scan until the program starts
@@ -57,7 +66,7 @@ public class RedDepotDecember_Copy extends theColt {
         lowerRobot();
         lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.CP1_HEARTBEAT_FAST);
         sleep(.3);
-        DriveforLength(1.2,  -.2); //drive forward out of the lander
+        DriveforLength(1,  -.4); //drive forward out of the lander
         driveIntoMineral(-45, goldMineralLocation); //this method knocks over the gold mineral and goes to depot
         //make sure the robot is facing straight towards the depot for deploying the team marker
         //if (goldMineralLocation==GOLD_MINERAL_LEFT && getRobotPositionX()>24) do
@@ -69,16 +78,17 @@ public class RedDepotDecember_Copy extends theColt {
         //} while (getRobotPositionX()>24);
         //if (goldMineralLocation==GOLD_MINERAL_RIGHT) DriveforLength(.8, -.5);
         deployTeamMarker();
-        DriveToPointPID(30,3,1);; //to halfway creater
+        if (goldMineralLocation==GOLD_MINERAL_CENTER) TurnPID(0,1);
+        DriveToPointPID(30,3,1); //to halfway creater
         TurnPID(0,1);
         //setEquation(new double[] {3});
-        do {
-        DriveToPointPID(48,3,3);; //to halfway creater
-        TurnPID(0, 1);
-        } while (getRobotPositionX()<40 && (distanceSensorX.getDistance(DistanceUnit.INCH))!=0 && (distanceSensorY.getDistance(DistanceUnit.INCH))!=0 && gametime.seconds()<20);
+        //do {
+        DriveToPointPID(48,2.5,1.5); //to halfway creater
+        TurnPID(0, .5);
+        //} while (getRobotPositionX()<40 && (distanceSensorX.getDistance(DistanceUnit.INCH))!=0 && (distanceSensorY.getDistance(DistanceUnit.INCH))!=0 && gametime.seconds()<20);
         DriveFieldRealtiveDistance(.5, 90, 3.5);
-        TurnPID(0,1);
-        DriveFieldRealtiveDistance(.1, 90,.2);
+        TurnPID(0,.5);
+        DriveFieldRealtiveDistance(.1, 90,.13);
         stopRobot();                                                    //at long distances, distance sensors are unreliable.
         writeFile(GYRO_ANGLE_FILE_NAME, getIMUAngle()); //save the current gyro angle for later use in the field realtive teleop
         teamMarker.setPosition(1);
