@@ -34,6 +34,15 @@ public class RedCreatorDecember_Copy extends theColt {
         goldMineralLocation=GOLD_MINERAL_UNKNOWN;
         
         telemetry.log().add("UPDATED ","");
+         hanger.setPower(.7);
+        while (opModeIsActive() && !isLimitSwitchPressed())
+        {
+            telemetry.addData("limit switch pressed?", isLimitSwitchPressed());
+            telemetry.addData("limit switch volatage", limitSwitch.getVoltage());
+            telemetry.update();
+        }
+        hanger.setPower(0);
+        telemetry.log().add("hanger calibrated");
         tfod.activate();
         while (!isStarted())
         {
@@ -75,14 +84,23 @@ public class RedCreatorDecember_Copy extends theColt {
         TurnPID(180, 3);
         sleep(.3);
         //if (goldMineralLocation==GOLD_MINERAL_LEFT) DriveFieldRealtiveDistance(1, 90, 3.8);
-        DriveFieldRealtiveDistance(1, 90, 3.5); 
-        TurnPID(150, 1.5);
+        //if (goldMineralLocation==GOLD_MINERAL_RIGHT)
+        //{
+        //    DriveFieldRealtiveDistance(1, 90, .3);
+        //    DriveFieldRealtiveDistance(1, 45, 1);
+        //     DriveFieldRealtiveDistance(1, 135, 1);
+        //      DriveFieldRealtiveDistance(1, 90, .4);
+        //}
+        //else 
+        DriveFieldRealtiveDistance(1, 90, 3); 
+        TurnPID(150, .5);
         deployTeamMarker(); //lines below drive to the crator
         TurnPID(90, 1);
         TurnPID(10, 2);
         //if (goldMineralLocation==GOLD_MINERAL_LEFT)  DriveFieldRealtiveDistance(.9, 280, 5.3);
-        DriveFieldRealtiveDistance(.9, 280, 4);
-        DriveFieldRealtiveDistance(.2, 280, 2);
+        DriveFieldRealtiveDistance(.9, 280, 4.2);
+        //DriveToPointPID(46,3,3);
+        DriveFieldRealtiveDistance(.2, 280, .4);
         teamMarker.setPosition(1);
         stopRobot();
         writeFile(GYRO_ANGLE_FILE_NAME, getIMUAngle()-90);
