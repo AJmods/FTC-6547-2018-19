@@ -66,7 +66,7 @@ class theColt extends LinearOpMode{
     static double lastPosY=40;
 
     static final String VUFORIA_KEY = "AS1gFCv/////AAAAGT+9l7LOzEkhnmqU88TWaZ0FGZEbE+PSk+otNY0JQQ6RVgYi9ZIOKxFkKSKF9rvzVOb6fDI734ntzIl721dBhibt0nhLVeWz98d/pUHZ/FT9pwaMwZssoK+5U7iS5gBmqSY66/R+LXuBlCkjOHXbGwwV5hczxOjOZJlkkK62Jv7Gtt7Va4sPV+1o+MxdZEpr4UXKCV6OJ2r/3OJSW53r0PwTHqpnxTaWuGDuioVbE+2gnDsrG3o5A+hJJqHocRlji2o61cM7BOuhajDdLxD4Rvus9VOh7Jz5j5EDpwLU6HOMONwOmonDpzZBrkukd0vQ/+aNElMzX29sUwebD212KD/Lpv3ozK+H1JHzQHyGRRDi";
-
+//
     // Since ImageTarget trackables use mm to specify their dimensions, we must use mm for all the physical dimension.
     // We will define some constants and conversions here
     private static final float mmPerInch        = 25.4f;
