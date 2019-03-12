@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.DrewsPrograms;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.AnalogInput;
@@ -7,9 +7,8 @@ import java.io.File;
 
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cRangeSensor;
 import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
-import com.qualcomm.robotcore.util.Range;
+import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.util.ReadWriteFile;
-import com.qualcomm.robotcore.robot.Robot;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -19,48 +18,41 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcontroller.external.samples.SensorREVColorDistance;
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
-import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
-import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
 import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 
 import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import static org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.DEGREES;
-import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.XYZ;
-import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.YZX;
-import static org.firstinspires.ftc.robotcore.external.navigation.AxesReference.EXTRINSIC;
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.BACK;
-import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.FRONT;
-
 /**
- * Created by Drew from 11874 on 10/17/2018.
+ * Created by Drew from 6547 on 10/17/2018.
  */
 
 @Disabled
 class theColt extends LinearOpMode{
     final double encoderTicksPerRotation=510;
     final double circumferenceOfWheel=12.566370614359172;
-    //Vuforia Images (these are just here to make the code easier to read
+
+    final double linearSlideMaxEncoder=0;
+    final double armMaxEncoder=0;
     double angleZzeroValue=0;
+
+    MiniPID armPID = new MiniPID(.10, 0.00, 0);
+
+    MiniPID slidePID = new MiniPID(.10, 0.00, 0);
 
     static double lastPosX=40;
     static double lastPosY=40;
@@ -131,6 +123,8 @@ class theColt extends LinearOpMode{
     Servo teamMarker;
     Servo mineralArm;
 
+    ColorSensor colorSensor;
+
     boolean is11874Bot=false;
 
     double offsetX=0;
@@ -166,6 +160,9 @@ class theColt extends LinearOpMode{
             mineralArm=hardwareMap.get(Servo.class, "mineral arm");
             lights=hardwareMap.get(RevBlinkinLedDriver.class, "lights");
             limitSwitch=hardwareMap.get(AnalogInput.class, "limit switch");
+            colorSensor=hardwareMap.get(ColorSensor.class,"color sensor");
+            zeroLinearSlide();
+            zeroArm();
             mineralArm.setPosition(0);
             teamMarker.setPosition(1);
         }
@@ -290,6 +287,96 @@ class theColt extends LinearOpMode{
         }
         stopRobot();
         angleZzeroValue=tempZeroValue;
+    }
+    public void TurnPIDandLowerArm(double angle, double seconds, double armLoweredPercent, double armExtensionPercent)
+    {
+        //make sure the robot will always go the right direction
+        MiniPID miniPID = new MiniPID(.01, 0, .013);
+        double angleDiference=angle-getIMUAngle();
+        if (Math.abs(angleDiference)>180) //make the angle difference less then 180 to remove unnecessary turning
+        {
+            angleDiference+=(angleDiference>=0) ? -360 : 360;
+        }
+        double tempZeroValue=angleZzeroValue;
+        angleZzeroValue=0;
+        angleZzeroValue=-getIMUAngle();
+
+        miniPID.setOutputLimits(1);
+
+        miniPID.setSetpointRange(40);
+
+        double actual=0;
+        double output=0;
+        telemetry.log().add("angle difference " + angleDiference);
+        double target=angleDiference;
+        miniPID.setSetpoint(0);
+        miniPID.setSetpoint(target);
+        double target2 = armMaxEncoder*armLoweredPercent;
+        armPID.setSetpoint(0);
+        armPID.setSetpoint(target2);
+        armPID.setOutputLimits(1);
+
+        armPID.setSetpointRange(40);
+
+        //MiniPID slidePID = new MiniPID(.10, 0.00, 0);
+        double target3 = linearSlideMaxEncoder*armExtensionPercent;
+        slidePID.setSetpoint(0);
+        slidePID.setSetpoint(target3);
+        slidePID.setOutputLimits(1);
+
+        slidePID.setSetpointRange(40);
+        runtime.reset();
+        while (opModeIsActive() && runtime.seconds() < seconds) {
+
+            output = miniPID.getOutput(actual, target);
+            if (angle>175 || angle <-175) actual = getIMUAngle(true);
+            else actual = getIMUAngle();
+            turnLeft(output);
+            actual=arm.getCurrentPosition();
+            output=armPID.getOutput(actual, target2);
+            arm.setPower(output);
+            actual=linearSlide.getCurrentPosition();
+            output=slidePID.getOutput(actual,target3);
+            linearSlide.setPower(output);
+            outputTelemetry();
+        }
+        stopRobot();
+        angleZzeroValue=tempZeroValue;
+    }
+    void intake(double power)
+    {
+        intake.setPower(power);
+    }
+    void outtake(double power)
+    {
+        intake.setPower(-power);
+    }
+    void stopIntake() {intake.setPower(0);}
+    boolean isSilverMineral()
+    {
+        if (colorSensor.argb()>200)
+        {
+            telemetry.log().add("DETECTED SILVER MINERAL");
+            return true;
+        }
+        return false;
+    }
+    boolean isGoldMineral()
+    {
+        if (colorSensor.red()>150 && colorSensor.green()>150)
+        {
+            telemetry.log().add("DETECTED GOLD MINERAL");
+            return true;
+        }
+        return false;
+    }
+    double getCurrentPercentArmLowered()
+    {
+        return arm.getCurrentPosition()/armMaxEncoder;
+    }
+    double getCurrentPercentArmExtended()
+    {
+        return linearSlide.getCurrentPosition()/linearSlideMaxEncoder;
     }
     void scanMinerals() {
         tfod.activate();
@@ -520,6 +607,86 @@ class theColt extends LinearOpMode{
         }
         stopRobot();
 
+    }
+    void DriveFieldRealtiveDistanceAndLowerArm(double power, double angleInDegrees, double feet, double armLoweredPercent, double armExtensionPercent)
+    {
+        zeroEncoders();
+        double inches = feet*12;
+        double encodersPerInch = encoderTicksPerRotation/circumferenceOfWheel;
+        double drivingDistanceInEncoderTicks = encodersPerInch*inches;
+        double speed = power;
+        double desiredAngle =Math.toRadians(angleInDegrees)-Math.PI / 4;
+        //double robotAngle = Math.toRadians(getIMUAngle());
+        double rightX = 0;
+        telemetry.log().add("averge encoder" + averageDrivetrainEncoder());
+        //set arm infomation
+        //MiniPID armPID = new MiniPID(.10, 0.00, 0);
+        double target = armMaxEncoder*armLoweredPercent;
+        armPID.setSetpoint(0);
+        armPID.setSetpoint(target);
+        armPID.setOutputLimits(1);
+
+        armPID.setSetpointRange(40);
+
+        //MiniPID slidePID = new MiniPID(.10, 0.00, 0);
+        double target2 = linearSlideMaxEncoder*armExtensionPercent;
+        slidePID.setSetpoint(0);
+        slidePID.setSetpoint(target);
+        slidePID.setOutputLimits(1);
+
+        slidePID.setSetpointRange(40);
+
+        double actual=0;
+        double output=0;
+        while (opModeIsActive() && Math.abs(averageDrivetrainEncoder())<Math.abs(drivingDistanceInEncoderTicks))
+        {
+            double robotAngle = Math.toRadians(getIMUAngle());
+            LeftFront.setPower(speed * Math.cos(desiredAngle-robotAngle) + rightX);
+            RightFront.setPower(speed * Math.sin(desiredAngle-robotAngle) - rightX);
+            LeftBack.setPower(speed * Math.sin(desiredAngle-robotAngle) + rightX);
+            RightBack.setPower(speed * Math.cos(desiredAngle-robotAngle) - rightX);
+            actual=arm.getCurrentPosition();
+            output=armPID.getOutput(actual, target);
+            arm.setPower(output);
+            actual=linearSlide.getCurrentPosition();
+            output=slidePID.getOutput(actual, target2);
+            linearSlide.setPower(output);
+            outputTelemetry();
+            if (!isLimitSwitchPressed()) hanger.setPower(-.7);
+            else hanger.setPower(0);
+        }
+        stopRobot();
+
+    }
+    void lowerArm(double armLoweredPercent, double armExtensionPercent, double time)
+    {
+        double target = armMaxEncoder*armLoweredPercent;
+        armPID.setSetpoint(0);
+        armPID.setSetpoint(target);
+        armPID.setOutputLimits(1);
+
+        armPID.setSetpointRange(40);
+
+        //MiniPID slidePID = new MiniPID(.10, 0.00, 0);
+        double target2 = linearSlideMaxEncoder*armExtensionPercent;
+        slidePID.setSetpoint(0);
+        slidePID.setSetpoint(target);
+        slidePID.setOutputLimits(1);
+
+        slidePID.setSetpointRange(40);
+
+        double actual=0;
+        double output=0;
+        runtime.reset();
+        while (opModeIsActive() && runtime.seconds()>time)
+        {
+            actual=arm.getCurrentPosition();
+            output=armPID.getOutput(actual, target);
+            arm.setPower(output);
+            actual=linearSlide.getCurrentPosition();
+            output=slidePID.getOutput(actual, target2);
+            linearSlide.setPower(output);
+        }
     }
     void driveIntoMineral(double angleParrelToMinerals, int mineralLocation)
     {
@@ -794,6 +961,16 @@ class theColt extends LinearOpMode{
     {
         hanger.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         hanger.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    }
+    void zeroArm()
+    {
+        arm.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        arm.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    }
+    void zeroLinearSlide()
+    {
+        linearSlide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        linearSlide.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
     public void driveForward(double power)
     {
