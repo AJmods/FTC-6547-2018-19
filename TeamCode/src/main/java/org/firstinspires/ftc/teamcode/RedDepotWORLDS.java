@@ -7,9 +7,6 @@ import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
 
-/**
- * Created by Drew from 11874 on 10/20/2018.
- */
 class goldMineralPosition
 {
     double gyroAngle;
@@ -32,7 +29,9 @@ public class RedDepotWORLDS extends theColt {
 
     int totalMinerals=0;
 
-    double timeToGetGold=3;
+    boolean turningRight=false;
+
+    double timeToGetGold=6;
     @Override
     public void runOpMode() {
         telemetry.addData("You broke it Harrison","");
@@ -40,7 +39,6 @@ public class RedDepotWORLDS extends theColt {
         timeToGetGold=30-timeToGetGold;
         
         INIT(hardwareMap);
-        
         lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.STROBE_RED);
         
         initIMU();
@@ -85,19 +83,10 @@ public class RedDepotWORLDS extends theColt {
         sleep(.3);
         DriveforLength(1,  -.4); //drive forward out of the lander
         driveIntoMineral(-45, goldMineralLocation); //this method knocks over the gold mineral and goes to depot
-        //make sure the robot is facing straight towards the depot for deploying the team marker
-        //if (goldMineralLocation==GOLD_MINERAL_LEFT && getRobotPositionX()>24) do
-        //{
-            //setEquation(new double[] {3});
-            //driveOverLine(.5, 24, 72, true);
-        //     DriveToPointPID(24,3,1);
-        //     TurnPID(0,2);
-        //} while (getRobotPositionX()>24);
-        //if (goldMineralLocation==GOLD_MINERAL_RIGHT) DriveforLength(.8, -.5);
         deployTeamMarker();
         if (goldMineralLocation==GOLD_MINERAL_CENTER) TurnPID(0,1);
         DriveToPointPID(30,3,1); //get out of depot
-        TurnPID(0,1);
+        TurnPID(0,.5);
         //below are old methods used for going to the crator and stoping.
         /*DriveToPointPID(48,2.5,1.5); //get halfway to depot
         TurnPID(0, .5);
@@ -116,14 +105,14 @@ public class RedDepotWORLDS extends theColt {
         telemetry.log().add("Autonomous is done, if might have failed but hopefully it didn't");
         while (opModeIsActive()) //after program is done
         {
-            telemetry.addData("current angle", getIMUAngle());
+            telemetry.addData("current Angle:", getIMUAngle());
             telemetry.update();
         }
     }
     void sortMinerals()
     {
-        if (getCurrentPercentArmLowered()<.9) lowerArm(.95, .95,1); //make sure arm is lowered
-        while (opModeIsActive() && !isTimeToGetGold())
+        //if (getCurrentPercentArmLowered()<.9) lowerArm(.95, .95,1); //make sure arm is lowered
+        while (opModeIsActive() && !isTimeToGetGold() && !turningRight)
         {
             if (turnLeftUntilBall(.2,135))
             {
@@ -137,9 +126,12 @@ public class RedDepotWORLDS extends theColt {
                 }
                 stopIntake();
                 totalMinerals++;
+                if (totalMinerals<=1 && getIMUAngle()<=130) continue; //go to beginging of loop, contine turning left
             }
+            //turned left returned false, turn right.
             else if (!isTimeToGetGold() && opModeIsActive() && totalMinerals!=2)
             {
+                turningRight=true;
                 if (turnRightUntilBall(.2,90))
                 {
                     lowerArm(getCurrentPercentArmLowered(), (getCurrentPercentArmExtended()-.1),.5);
@@ -153,32 +145,32 @@ public class RedDepotWORLDS extends theColt {
                     stopIntake();
                     totalMinerals++;
                 }
+                if (getIMUAngle()<=95) turningRight=false;
             }
             if (totalMinerals>=2)
             {
+                telemetry.log().add("dropping off balls");
                 double oldArmPos=getCurrentPercentArmLowered();
                 double oldArmExtendingPos=getCurrentPercentArmExtended();
                 double oldIMUAngle=getIMUAngle();
                 lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.STROBE_WHITE);
-                TurnPIDandLowerArm(140, 1, .6, .8);
+                TurnPIDandLowerArm(140, 1, .6, .6);
                 outtake(1);
-                runtime.reset();
-                while (opModeIsActive() && runtime.seconds()<1)
-                {
-
-                }
+                sleep(1000);
                 totalMinerals=0;
+                stopIntake();
                 TurnPIDandLowerArm(oldIMUAngle, 1, oldArmPos, oldArmExtendingPos);
                 lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.SHOT_BLUE);
             }
 
         }
         //time is almost up, time to grab GOLD
+        telemetry.log().add("Getting gold minerals with " + (30-gametime.seconds() + " remaining"));
         while (opModeIsActive() && runtime.seconds()<.8) lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.GOLD);
         TurnPIDandLowerArm(goldMineralPositions[0].gyroAngle, 1, goldMineralPositions[0].armPos, goldMineralPositions[0].armExtentionPos);
         intake(1);
         runtime.reset();
-        while (runtime.seconds()<1);
+        while (runtime.seconds()<.7);
         stopIntake();
         TurnPIDandLowerArm(goldMineralPositions[1].gyroAngle, 1, goldMineralPositions[1].armPos, goldMineralPositions[1].armExtentionPos);
         intake(1);
@@ -192,15 +184,15 @@ public class RedDepotWORLDS extends theColt {
             telemetry.update();
             if (isGoldMineral())
             {
-                if (goldMineralPositions[0]==null) goldMineralPositions[0]=new goldMineralPosition(getIMUAngle(), getCurrentPercentArmExtended(), getCurrentPercentArmLowered());
-                if (goldMineralPositions[1]==null) goldMineralPositions[1]=new goldMineralPosition(getIMUAngle(), getCurrentPercentArmExtended(), getCurrentPercentArmLowered());
-
+                if (goldMineralPositions[0]==null) goldMineralPositions[0]=new goldMineralPosition(getIMUAngle(), getCurrentPercentArmExtended()-.1, getCurrentPercentArmLowered());
+                if (goldMineralPositions[1]==null) goldMineralPositions[1]=new goldMineralPosition(getIMUAngle(), getCurrentPercentArmExtended()-.1, getCurrentPercentArmLowered());
             }
         }
         //found silver mineral
         stopRobot();
         if (isSilverMineral())
         {
+            telemetry.log().add("Found Ball");
             lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.HEARTBEAT_WHITE);
             return true;
         }
@@ -215,7 +207,6 @@ public class RedDepotWORLDS extends theColt {
             {
                 if (goldMineralPositions[0]==null) goldMineralPositions[0]=new goldMineralPosition(getIMUAngle(), getCurrentPercentArmExtended(), getCurrentPercentArmLowered());
                 if (goldMineralPositions[1]==null) goldMineralPositions[1]=new goldMineralPosition(getIMUAngle(), getCurrentPercentArmExtended(), getCurrentPercentArmLowered());
-
             }
             telemetry.addData("Color sensor value", colorSensor.argb());
             telemetry.update();
@@ -224,6 +215,7 @@ public class RedDepotWORLDS extends theColt {
         stopRobot();
         if (isSilverMineral())
         {
+            telemetry.log().add("Found Ball");
             lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.HEARTBEAT_WHITE);
             return true;
         }
