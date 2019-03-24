@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.DrewsPrograms;
+package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.AnalogInput;
@@ -18,7 +18,6 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcontroller.external.samples.SensorREVColorDistance;
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -46,19 +45,19 @@ class theColt extends LinearOpMode{
     final double encoderTicksPerRotation=510;
     final double circumferenceOfWheel=12.566370614359172;
 
-    final double linearSlideMaxEncoder=0;
-    final double armMaxEncoder=0;
+    final double linearSlideMaxEncoder=-3850;
+    final double armMaxEncoder=3850;
     double angleZzeroValue=0;
 
-    MiniPID armPID = new MiniPID(.10, 0.00, 0);
+    MiniPID armPID = new MiniPID(.30, 0.00, 0);
 
-    MiniPID slidePID = new MiniPID(.10, 0.00, 0);
+    MiniPID slidePID = new MiniPID(.30, 0.00, 0);
 
     static double lastPosX=40;
     static double lastPosY=40;
 
     static final String VUFORIA_KEY = "AS1gFCv/////AAAAGT+9l7LOzEkhnmqU88TWaZ0FGZEbE+PSk+otNY0JQQ6RVgYi9ZIOKxFkKSKF9rvzVOb6fDI734ntzIl721dBhibt0nhLVeWz98d/pUHZ/FT9pwaMwZssoK+5U7iS5gBmqSY66/R+LXuBlCkjOHXbGwwV5hczxOjOZJlkkK62Jv7Gtt7Va4sPV+1o+MxdZEpr4UXKCV6OJ2r/3OJSW53r0PwTHqpnxTaWuGDuioVbE+2gnDsrG3o5A+hJJqHocRlji2o61cM7BOuhajDdLxD4Rvus9VOh7Jz5j5EDpwLU6HOMONwOmonDpzZBrkukd0vQ/+aNElMzX29sUwebD212KD/Lpv3ozK+H1JHzQHyGRRDi";
-//
+    //
     // Since ImageTarget trackables use mm to specify their dimensions, we must use mm for all the physical dimension.
     // We will define some constants and conversions here
     private static final float mmPerInch        = 25.4f;
@@ -160,7 +159,9 @@ class theColt extends LinearOpMode{
             mineralArm=hardwareMap.get(Servo.class, "mineral arm");
             lights=hardwareMap.get(RevBlinkinLedDriver.class, "lights");
             limitSwitch=hardwareMap.get(AnalogInput.class, "limit switch");
-            colorSensor=hardwareMap.get(ColorSensor.class,"color sensor");
+            colorSensor=hardwareMap.get(ColorSensor.class,"arm color sensor");
+            arm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            //arm.setTargetPosition(.9);
             zeroLinearSlide();
             zeroArm();
             mineralArm.setPosition(0);
@@ -173,7 +174,8 @@ class theColt extends LinearOpMode{
         arm.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         hanger.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         linearSlide.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        linearSlide.setDirection(DcMotorSimple.Direction.REVERSE);
+        intake.setDirection(DcMotorSimple.Direction.REVERSE);
+        arm.setDirection(DcMotorSimple.Direction.REVERSE);
         RightFront.setDirection(DcMotorSimple.Direction.REVERSE);
         RightBack.setDirection(DcMotorSimple.Direction.REVERSE);
     }
@@ -311,12 +313,9 @@ class theColt extends LinearOpMode{
         double target=angleDiference;
         miniPID.setSetpoint(0);
         miniPID.setSetpoint(target);
-        double target2 = armMaxEncoder*armLoweredPercent;
-        armPID.setSetpoint(0);
-        armPID.setSetpoint(target2);
-        armPID.setOutputLimits(1);
-
-        armPID.setSetpointRange(40);
+        arm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        arm.setTargetPosition((int) (armMaxEncoder*armLoweredPercent));
+        arm.setPower(.8);
 
         //MiniPID slidePID = new MiniPID(.10, 0.00, 0);
         double target3 = linearSlideMaxEncoder*armExtensionPercent;
@@ -332,24 +331,24 @@ class theColt extends LinearOpMode{
             if (angle>175 || angle <-175) actual = getIMUAngle(true);
             else actual = getIMUAngle();
             turnLeft(output);
-            actual=arm.getCurrentPosition();
-            output=armPID.getOutput(actual, target2);
-            arm.setPower(output);
+            if (!arm.isBusy()) arm.setPower(0);
             actual=linearSlide.getCurrentPosition();
             output=slidePID.getOutput(actual,target3);
             linearSlide.setPower(output);
             outputTelemetry();
         }
+        linearSlide.setPower(0);
+        arm.setPower(0);
         stopRobot();
         angleZzeroValue=tempZeroValue;
     }
     void intake(double power)
     {
-        intake.setPower(power);
+        intake.setPower(-power);
     }
     void outtake(double power)
     {
-        intake.setPower(-power);
+        intake.setPower(power);
     }
     void stopIntake() {intake.setPower(0);}
     boolean isSilverMineral()
@@ -359,7 +358,7 @@ class theColt extends LinearOpMode{
             telemetry.log().add("DETECTED SILVER MINERAL");
             return true;
         }
-        return false;
+        else return false;
     }
     boolean isGoldMineral()
     {
@@ -368,7 +367,7 @@ class theColt extends LinearOpMode{
             telemetry.log().add("DETECTED GOLD MINERAL");
             return true;
         }
-        return false;
+        else return false;
     }
     double getCurrentPercentArmLowered()
     {
@@ -566,24 +565,36 @@ class theColt extends LinearOpMode{
     String formatDegrees(double degrees){
         return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
     }
-    void DriveforLength(double feet,double power)
+   void DriveforLength(double feet,double power)
     {
         telemetry.log().add("Drving for length");
         if (power>=0) feet = Math.abs(feet);
         else feet = -Math.abs(feet);
+        double gyroAngle=getIMUAngle(); //get the angle of the gyro before the robot takes off
         zeroEncoders();
         driveForward(power);
         double inches = feet*12;
         double encodersPerInch = encoderTicksPerRotation/circumferenceOfWheel;
         double drivingDistanceInEncoderTicks = encodersPerInch*inches;
-        while (Math.abs(RightBack.getCurrentPosition()) <=drivingDistanceInEncoderTicks && opModeIsActive())
+        if (drivingDistanceInEncoderTicks>=0) while (RightBack.getCurrentPosition() <=drivingDistanceInEncoderTicks && opModeIsActive())
         {
             telemetry.addData("Encoder ticks to drive (positve)", drivingDistanceInEncoderTicks);
             telemetry.addData("IMU angle", getIMUAngle());
             outputTelemetry();
         }
+        else while (RightBack.getCurrentPosition() >=drivingDistanceInEncoderTicks && opModeIsActive())
+        {
+            telemetry.addData("Encoder ticks to drive (negitive)", drivingDistanceInEncoderTicks);
+            telemetry.addData("IMU angle", getIMUAngle());
+            outputTelemetry();
+        }
         stopRobot();
-         telemetry.log().add("Done with Drive for length");
+        telemetry.log().add("Done with Drive for length");
+        telemetry.log().add("Left Front Encoder Pos:"+ LeftFront.getCurrentPosition());
+        telemetry.log().add("Right Front Encoder Pos:"+ RightFront.getCurrentPosition());
+        telemetry.log().add("Left Back Encoder Pos:"+ LeftBack.getCurrentPosition());
+        telemetry.log().add("Right Back Encoder Pos:"+ RightBack.getCurrentPosition());
+        telemetry.log().add("Done with Drive for length");
     }
     void DriveFieldRealtiveDistance(double power, double angleInDegrees, double feet)
     {
@@ -652,14 +663,24 @@ class theColt extends LinearOpMode{
             output=slidePID.getOutput(actual, target2);
             linearSlide.setPower(output);
             outputTelemetry();
-            if (!isLimitSwitchPressed()) hanger.setPower(-.7);
+            if (!isLimitSwitchPressed()) hanger.setPower(.7);
             else hanger.setPower(0);
+            telemetry.addData("Left Front Encoder Pos:", LeftFront.getCurrentPosition());
+            telemetry.addData("Right Front Encoder Pos:", RightFront.getCurrentPosition());
+            telemetry.addData("Left Back Encoder Pos:", LeftBack.getCurrentPosition());
+            telemetry.addData("Right Back Encoder Pos:", RightBack.getCurrentPosition());
+            telemetry.update();
         }
+        linearSlide.setPower(0);
+        arm.setPower(0);
+        hanger.setPower(0);
         stopRobot();
 
     }
-    void lowerArm(double armLoweredPercent, double armExtensionPercent, double time)
+    void driveToPointPIDandLowerArm(double x, double y, double armLoweredPercent, double armExtensionPercent, double time)
     {
+        //set arm infomation
+        //MiniPID armPID = new MiniPID(.10, 0.00, 0);
         double target = armMaxEncoder*armLoweredPercent;
         armPID.setSetpoint(0);
         armPID.setSetpoint(target);
@@ -677,16 +698,76 @@ class theColt extends LinearOpMode{
 
         double actual=0;
         double output=0;
+        MiniPID miniPID = new MiniPID(.055, 0.000, 0.04);
+        miniPID.setSetpoint(0);
+        miniPID.setSetpoint(x);
+        miniPID.setOutputLimits(1);
+
+        miniPID.setSetpointRange(40);
+
+        double actualX=0;
+        double outputX=0;
+
+        MiniPID miniPIDY = new MiniPID(.10, 0.00, 0.05);
+        miniPIDY.setSetpoint(0);
+        miniPIDY.setSetpoint(y);
+        miniPIDY.setOutputLimits(1);
+
+        miniPIDY.setSetpointRange(40);
+
+        double actualY=0;
+        double outputY=0;
+
         runtime.reset();
-        while (opModeIsActive() && runtime.seconds()>time)
-        {
+        while (opModeIsActive() && runtime.seconds()<time) {
+            actualX = getRobotPositionX();
+            outputX = miniPID.getOutput(actualX, x);
+            actualY = getRobotPositionY();
+            outputY = miniPIDY.getOutput(actualY, y);
+            double power = Math.hypot(outputX, outputY);
+            if (power>.8) power = .8; //set max power as .8
+            double slope = getSlope(x, y, actualX, actualY);
+            double angle = Math.toDegrees(Math.atan2(outputX, -outputY));
+            DriveFieldRealtiveSimple(power, angle);
             actual=arm.getCurrentPosition();
             output=armPID.getOutput(actual, target);
             arm.setPower(output);
             actual=linearSlide.getCurrentPosition();
             output=slidePID.getOutput(actual, target2);
             linearSlide.setPower(output);
+             if (!isLimitSwitchPressed()) hanger.setPower(.7);
+            else hanger.setPower(0);
         }
+        stopRobot();
+        linearSlide.setPower(0);
+        arm.setPower(0);
+        hanger.setPower(0);
+    }
+    void lowerArm(double armLoweredPercent, double armExtensionPercent, double time)
+    {
+        //set arm infomation
+        //MiniPID armPID = new MiniPID(.10, 0.00, 0);
+        arm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        arm.setTargetPosition((int) (armMaxEncoder*armLoweredPercent));
+        arm.setPower(.8);
+
+        //MiniPID slidePID = new MiniPID(.10, 0.00, 0);
+        linearSlide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        linearSlide.setTargetPosition((int) (linearSlideMaxEncoder*armExtensionPercent));
+        linearSlide.setPower(.8);
+        runtime.reset();
+        while (opModeIsActive() && runtime.seconds()<time)
+        {
+            if (!arm.isBusy()) arm.setPower(0);
+            if (!linearSlide.isBusy()) linearSlide.setPower(0);
+            telemetry.addData("ARM current Position", arm.getCurrentPosition());
+            telemetry.addData("ARM current Position %", getCurrentPercentArmLowered());
+            telemetry.addData("LINEAR SLIDE current Position", linearSlide.getCurrentPosition());
+            telemetry.addData("LINEAR SLIDE current Position %", getCurrentPercentArmExtended());
+            telemetry.update();
+        }
+        linearSlide.setPower(0);
+        arm.setPower(0);
     }
     void driveIntoMineral(double angleParrelToMinerals, int mineralLocation)
     {
@@ -704,8 +785,7 @@ class theColt extends LinearOpMode{
         }
         else if (mineralLocation==GOLD_MINERAL_LEFT)
         {
-            DriveToPointPID(50,13, 3);
-            DriveToPointPID(34,15, 2);
+            DriveToPointPID(50,13, 2.5);
             DriveToPointPID(24,5, 2);
         }
         else if (goldMineralLocation==GOLD_MINERAL_CENTER)
@@ -723,9 +803,9 @@ class theColt extends LinearOpMode{
         if (goldMineralLocation!=GOLD_MINERAL_CENTER) TurnPID(0, 3);
         if (goldMineralLocation==GOLD_MINERAL_RIGHT)
         {
-             DriveToPointPID(24,40,2);
-             DriveToPointPID(30,40,2);
-             DriveToPointPID(63,3,4);
+            DriveToPointPID(24,40,2);
+            DriveToPointPID(30,40,2);
+            DriveToPointPID(63,3,4);
         }
         else if (goldMineralLocation==GOLD_MINERAL_LEFT)
         {
@@ -820,7 +900,7 @@ class theColt extends LinearOpMode{
 
         double actualY=0;
         double outputY=0;
-    
+
         runtime.reset();
         while (opModeIsActive() && runtime.seconds()<seconds) {
             actualX = getRobotPositionX();
@@ -832,6 +912,11 @@ class theColt extends LinearOpMode{
             double slope = getSlope(x, y, actualX, actualY);
             double angle = Math.toDegrees(Math.atan2(outputX, -outputY));
             DriveFieldRealtiveSimple(power, angle);
+            if (Math.abs(getIMUAngle())>=5)
+            {
+                TurnPID(0,.5);
+                seconds++;
+            }
         }
         stopRobot();
     }
