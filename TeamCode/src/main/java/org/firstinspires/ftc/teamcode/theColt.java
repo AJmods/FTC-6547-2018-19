@@ -847,6 +847,7 @@ class theColt extends LinearOpMode{
         }
 
     }
+    /*
     void strafeToDistanceYPID(double inch, double gap)
     {
         MiniPID miniPID = new MiniPID(.10, 0.00, 0.05);
@@ -871,6 +872,32 @@ class theColt extends LinearOpMode{
         }
         stopRobot();
     }
+    */
+    void strafeToDistanceYPID(double inch, double gap) { strafeToDistanceYPID(inch,gap,0);}
+    void strafeToDistanceYPID(double inch, double gap, double offset)
+    {
+        MiniPID miniPID = new MiniPID(.10, 0.00, 0.05);
+        double target = inch;
+        miniPID.setSetpoint(0);
+        miniPID.setSetpoint(target);
+        miniPID.setOutputLimits(1);
+
+        miniPID.setSetpointRange(40);
+
+        double actual=0;
+        double output=0;
+        runtime.reset();
+        while (opModeIsActive() && runtime.seconds()<gap) {
+
+            actual = getRobotPositionY();
+            output = miniPID.getOutput(actual, target);
+            DriveFieldRealtiveSimple(output, (output>=0) ? 180+offset : 0+offset);
+            telemetry.addData("Output", output);
+            telemetry.addData("Pos Y", getRobotPositionY());
+            telemetry.update();
+        }
+        stopRobot();
+    }
     public void switchXandY()
     {
         //ModernRoboticsI2cRangeSensor temp =  distanceSensorY;
@@ -879,7 +906,7 @@ class theColt extends LinearOpMode{
         if (rotationOffset==90) setOffset(0,0,0);
         else setOffset(0,0,90);
     }
-    public void DriveToPointPID(double x, double y, double seconds)
+    /*public void DriveToPointPID(double x, double y, double seconds)
     {
         MiniPID miniPID = new MiniPID(.055, 0.000, 0.04);
         miniPID.setSetpoint(0);
@@ -911,6 +938,49 @@ class theColt extends LinearOpMode{
             if (power>.8) power = .8; //set max power as .8
             double slope = getSlope(x, y, actualX, actualY);
             double angle = Math.toDegrees(Math.atan2(outputX, -outputY));
+            DriveFieldRealtiveSimple(power, angle);
+            if (Math.abs(getIMUAngle())>=5)
+            {
+                TurnPID(0,.5);
+                seconds++;
+            }
+        }
+        stopRobot();
+    }
+    */
+    public void DriveToPointPID(double x, double y, double seconds) { DriveToPointPID(x,y,seconds,0);}
+    public void DriveToPointPID(double x, double y, double seconds,double offset)
+    {
+        MiniPID miniPID = new MiniPID(.055, 0.000, 0.04);
+        miniPID.setSetpoint(0);
+        miniPID.setSetpoint(x);
+        miniPID.setOutputLimits(1);
+
+        miniPID.setSetpointRange(40);
+
+        double actualX=0;
+        double outputX=0;
+
+        MiniPID miniPIDY = new MiniPID(.10, 0.00, 0.05);
+        miniPIDY.setSetpoint(0);
+        miniPIDY.setSetpoint(y);
+        miniPIDY.setOutputLimits(1);
+
+        miniPIDY.setSetpointRange(40);
+
+        double actualY=0;
+        double outputY=0;
+
+        runtime.reset();
+        while (opModeIsActive() && runtime.seconds()<seconds) {
+            actualX = getRobotPositionX();
+            outputX = miniPID.getOutput(actualX, x);
+            actualY = getRobotPositionY();
+            outputY = miniPIDY.getOutput(actualY, y);
+            double power = Math.hypot(outputX, outputY);
+            if (power>.8) power = .8; //set max power as .8
+            double slope = getSlope(x, y, actualX, actualY);
+            double angle = Math.toDegrees(Math.atan2(outputX, -outputY)) + offset;
             DriveFieldRealtiveSimple(power, angle);
             if (Math.abs(getIMUAngle())>=5)
             {
