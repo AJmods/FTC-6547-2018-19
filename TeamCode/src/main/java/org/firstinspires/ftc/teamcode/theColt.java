@@ -174,6 +174,7 @@ class theColt extends LinearOpMode{
         arm.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         hanger.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         linearSlide.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         intake.setDirection(DcMotorSimple.Direction.REVERSE);
         arm.setDirection(DcMotorSimple.Direction.REVERSE);
         RightFront.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -341,6 +342,14 @@ class theColt extends LinearOpMode{
         arm.setPower(0);
         stopRobot();
         angleZzeroValue=tempZeroValue;
+    }
+    void strafeLeft(double power, int target)
+    {
+         DriveLeft(power);
+         zeroEncoders();
+         while (Math.abs(RightFront.getCurrentPosition())<Math.abs(target) && opModeIsActive());
+         stopRobot();
+         
     }
     void intake(double power)
     {
@@ -565,7 +574,7 @@ class theColt extends LinearOpMode{
     String formatDegrees(double degrees){
         return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
     }
-   void DriveforLength(double feet,double power)
+    void DriveforLength(double feet,double power)
     {
         telemetry.log().add("Drving for length");
         if (power>=0) feet = Math.abs(feet);
@@ -735,7 +744,7 @@ class theColt extends LinearOpMode{
             actual=linearSlide.getCurrentPosition();
             output=slidePID.getOutput(actual, target2);
             linearSlide.setPower(output);
-             if (!isLimitSwitchPressed()) hanger.setPower(.7);
+            if (!isLimitSwitchPressed()) hanger.setPower(.7);
             else hanger.setPower(0);
         }
         stopRobot();
@@ -749,14 +758,14 @@ class theColt extends LinearOpMode{
         //MiniPID armPID = new MiniPID(.10, 0.00, 0);
         arm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         arm.setTargetPosition((int) (armMaxEncoder*armLoweredPercent));
-        arm.setPower(.8);
+        arm.setPower(1);
 
         //MiniPID slidePID = new MiniPID(.10, 0.00, 0);
         linearSlide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         linearSlide.setTargetPosition((int) (linearSlideMaxEncoder*armExtensionPercent));
-        linearSlide.setPower(.8);
+        linearSlide.setPower(1);
         runtime.reset();
-        while (opModeIsActive() && runtime.seconds()<time)
+        while (opModeIsActive() && arm.isBusy() && linearSlide.isBusy())
         {
             if (!arm.isBusy()) arm.setPower(0);
             if (!linearSlide.isBusy()) linearSlide.setPower(0);
@@ -1137,6 +1146,12 @@ class theColt extends LinearOpMode{
     public void turnLeft(double power) {
         LeftFront.setPower(power);
         RightFront.setPower(-power);
+        LeftBack.setPower(power);
+        RightBack.setPower(-power);
+    }
+    public void DriveLeft(double power) {
+        LeftFront.setPower(-power);
+        RightFront.setPower(power);
         LeftBack.setPower(power);
         RightBack.setPower(-power);
     }
