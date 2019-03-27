@@ -316,26 +316,20 @@ class theColt extends LinearOpMode{
         miniPID.setSetpoint(target);
         arm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         arm.setTargetPosition((int) (armMaxEncoder*armLoweredPercent));
-        arm.setPower(.8);
+        arm.setPower(1);
+        linearSlide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        linearSlide.setTargetPosition((int) (linearSlideMaxEncoder*armExtensionPercent));
+        linearSlide.setPower(1);
 
-        //MiniPID slidePID = new MiniPID(.10, 0.00, 0);
-        double target3 = linearSlideMaxEncoder*armExtensionPercent;
-        slidePID.setSetpoint(0);
-        slidePID.setSetpoint(target3);
-        slidePID.setOutputLimits(1);
-
-        slidePID.setSetpointRange(40);
         runtime.reset();
-        while (opModeIsActive() && runtime.seconds() < seconds) {
+        while (opModeIsActive() && (runtime.seconds() < seconds || arm.isBusy() || linearSlide.isBusy()) {
 
             output = miniPID.getOutput(actual, target);
             if (angle>175 || angle <-175) actual = getIMUAngle(true);
             else actual = getIMUAngle();
             turnLeft(output);
             if (!arm.isBusy()) arm.setPower(0);
-            actual=linearSlide.getCurrentPosition();
-            output=slidePID.getOutput(actual,target3);
-            linearSlide.setPower(output);
+            if (!linearSlide.isBusy()) linearSlide.setPower(0);
             outputTelemetry();
         }
         linearSlide.setPower(0);
@@ -349,7 +343,34 @@ class theColt extends LinearOpMode{
          zeroEncoders();
          while (Math.abs(RightFront.getCurrentPosition())<Math.abs(target) && opModeIsActive());
          stopRobot();
-         
+    }
+    void strafeLeftAndLowerArm(double power, int target,double armLoweredPercent, double armExtensionPercent)
+    {
+        arm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        arm.setTargetPosition((int) (armMaxEncoder*armLoweredPercent));
+        arm.setPower(1);
+
+        //MiniPID slidePID = new MiniPID(.10, 0.00, 0);
+        linearSlide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        linearSlide.setTargetPosition((int) (linearSlideMaxEncoder*armExtensionPercent));
+        linearSlide.setPower(1);
+        DriveLeft(power);
+        zeroEncoders();
+        while (opModeIsActive() && (arm.isBusy() || linearSlide.isBusy() || (Math.abs(RightFront.getCurrentPosition())<Math.abs(target))))
+        {
+            if (!arm.isBusy()) arm.setPower(0);
+            if (!linearSlide.isBusy()) linearSlide.setPower(0);
+            if (Math.abs(RightFront.getCurrentPosition())>Math.abs(target)) stopRobot();
+            telemetry.addData("ARM current Position", arm.getCurrentPosition());
+            telemetry.addData("ARM current Position %", getCurrentPercentArmLowered());
+            telemetry.addData("LINEAR SLIDE current Position", linearSlide.getCurrentPosition());
+            telemetry.addData("LINEAR SLIDE current Position %", getCurrentPercentArmExtended());
+            telemetry.update();
+        }
+        linearSlide.setPower(0);
+        arm.setPower(0);
+        stopRobot();
+
     }
     void intake(double power)
     {
@@ -638,26 +659,17 @@ class theColt extends LinearOpMode{
         double desiredAngle =Math.toRadians(angleInDegrees)-Math.PI / 4;
         //double robotAngle = Math.toRadians(getIMUAngle());
         double rightX = 0;
-        telemetry.log().add("averge encoder" + averageDrivetrainEncoder());
-        //set arm infomation
-        //MiniPID armPID = new MiniPID(.10, 0.00, 0);
-        double target = armMaxEncoder*armLoweredPercent;
-        armPID.setSetpoint(0);
-        armPID.setSetpoint(target);
-        armPID.setOutputLimits(1);
+        telemetry.log().add("average encoder" + averageDrivetrainEncoder());
 
-        armPID.setSetpointRange(40);
+        arm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        arm.setTargetPosition((int) (armMaxEncoder*armLoweredPercent));
+        arm.setPower(1);
 
         //MiniPID slidePID = new MiniPID(.10, 0.00, 0);
-        double target2 = linearSlideMaxEncoder*armExtensionPercent;
-        slidePID.setSetpoint(0);
-        slidePID.setSetpoint(target);
-        slidePID.setOutputLimits(1);
+        linearSlide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        linearSlide.setTargetPosition((int) (linearSlideMaxEncoder*armExtensionPercent));
+        linearSlide.setPower(1);
 
-        slidePID.setSetpointRange(40);
-
-        double actual=0;
-        double output=0;
         while (opModeIsActive() && Math.abs(averageDrivetrainEncoder())<Math.abs(drivingDistanceInEncoderTicks))
         {
             double robotAngle = Math.toRadians(getIMUAngle());
@@ -665,14 +677,10 @@ class theColt extends LinearOpMode{
             RightFront.setPower(speed * Math.sin(desiredAngle-robotAngle) - rightX);
             LeftBack.setPower(speed * Math.sin(desiredAngle-robotAngle) + rightX);
             RightBack.setPower(speed * Math.cos(desiredAngle-robotAngle) - rightX);
-            actual=arm.getCurrentPosition();
-            output=armPID.getOutput(actual, target);
-            arm.setPower(output);
-            actual=linearSlide.getCurrentPosition();
-            output=slidePID.getOutput(actual, target2);
-            linearSlide.setPower(output);
             outputTelemetry();
             if (!isLimitSwitchPressed()) hanger.setPower(.7);
+            if (!arm.isBusy()) arm.setPower(0);
+            if (!linearSlide.isBusy()) linearSlide.setPower(0);
             else hanger.setPower(0);
             telemetry.addData("Left Front Encoder Pos:", LeftFront.getCurrentPosition());
             telemetry.addData("Right Front Encoder Pos:", RightFront.getCurrentPosition());
@@ -688,25 +696,6 @@ class theColt extends LinearOpMode{
     }
     void driveToPointPIDandLowerArm(double x, double y, double armLoweredPercent, double armExtensionPercent, double time)
     {
-        //set arm infomation
-        //MiniPID armPID = new MiniPID(.10, 0.00, 0);
-        double target = armMaxEncoder*armLoweredPercent;
-        armPID.setSetpoint(0);
-        armPID.setSetpoint(target);
-        armPID.setOutputLimits(1);
-
-        armPID.setSetpointRange(40);
-
-        //MiniPID slidePID = new MiniPID(.10, 0.00, 0);
-        double target2 = linearSlideMaxEncoder*armExtensionPercent;
-        slidePID.setSetpoint(0);
-        slidePID.setSetpoint(target);
-        slidePID.setOutputLimits(1);
-
-        slidePID.setSetpointRange(40);
-
-        double actual=0;
-        double output=0;
         MiniPID miniPID = new MiniPID(.055, 0.000, 0.04);
         miniPID.setSetpoint(0);
         miniPID.setSetpoint(x);
@@ -727,23 +716,28 @@ class theColt extends LinearOpMode{
         double actualY=0;
         double outputY=0;
 
+        arm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        arm.setTargetPosition((int) (armMaxEncoder*armLoweredPercent));
+        arm.setPower(1);
+
+        //MiniPID slidePID = new MiniPID(.10, 0.00, 0);
+        linearSlide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        linearSlide.setTargetPosition((int) (linearSlideMaxEncoder*armExtensionPercent));
+        linearSlide.setPower(1);
+
         runtime.reset();
         while (opModeIsActive() && runtime.seconds()<time) {
+            if (!arm.isBusy()) arm.setPower(0);
+            if (!linearSlide.isBusy()) linearSlide.setPower(0);
             actualX = getRobotPositionX();
             outputX = miniPID.getOutput(actualX, x);
             actualY = getRobotPositionY();
             outputY = miniPIDY.getOutput(actualY, y);
             double power = Math.hypot(outputX, outputY);
-            if (power>.8) power = .8; //set max power as .8
+            //if (power>.8) power = .8; //set max power as .8
             double slope = getSlope(x, y, actualX, actualY);
             double angle = Math.toDegrees(Math.atan2(outputX, -outputY));
             DriveFieldRealtiveSimple(power, angle);
-            actual=arm.getCurrentPosition();
-            output=armPID.getOutput(actual, target);
-            arm.setPower(output);
-            actual=linearSlide.getCurrentPosition();
-            output=slidePID.getOutput(actual, target2);
-            linearSlide.setPower(output);
             if (!isLimitSwitchPressed()) hanger.setPower(.7);
             else hanger.setPower(0);
         }
@@ -765,7 +759,7 @@ class theColt extends LinearOpMode{
         linearSlide.setTargetPosition((int) (linearSlideMaxEncoder*armExtensionPercent));
         linearSlide.setPower(1);
         runtime.reset();
-        while (opModeIsActive() && arm.isBusy() && linearSlide.isBusy())
+        while (opModeIsActive() && (arm.isBusy() || linearSlide.isBusy()))
         {
             if (!arm.isBusy()) arm.setPower(0);
             if (!linearSlide.isBusy()) linearSlide.setPower(0);
@@ -832,7 +826,8 @@ class theColt extends LinearOpMode{
         }
         sleep(.5);
     }
-    void strafeToDistanceXPID(double inch, double gap)
+    void strafeToDistanceXPID(double inch, double time) {strafeToDistanceXPID(inch,gap,0);}
+    void strafeToDistanceXPID(double inch, double time, double offset)
     {
         MiniPID miniPID = new MiniPID(.055, 0.000, 0.04);
         double target = inch;
@@ -845,11 +840,11 @@ class theColt extends LinearOpMode{
         double actual=0;
         double output=0;
         runtime.reset();
-        while (opModeIsActive() && runtime.seconds()<gap) {
+        while (opModeIsActive() && runtime.seconds()<time) {
 
             actual = getRobotPositionX();
             output = miniPID.getOutput(actual, target);
-            DriveFieldRealtiveSimple(output, (output>=0) ? 90 : 270);
+            DriveFieldRealtiveSimple(output, (output>=0) ? 90+offset : 270+offset);
             telemetry.addData("Output", output);
             telemetry.addData("Pos X", getRobotPositionX());
             telemetry.update();
@@ -987,7 +982,7 @@ class theColt extends LinearOpMode{
             actualY = getRobotPositionY();
             outputY = miniPIDY.getOutput(actualY, y);
             double power = Math.hypot(outputX, outputY);
-            if (power>.8) power = .8; //set max power as .8
+            //if (power>.8) power = .8; //set max power as .8
             double slope = getSlope(x, y, actualX, actualY);
             double angle = Math.toDegrees(Math.atan2(outputX, -outputY)) + offset;
             DriveFieldRealtiveSimple(power, angle);
@@ -1103,10 +1098,10 @@ class theColt extends LinearOpMode{
     double averageDrivetrainEncoder()
     {
         double motorposition=0;
-        motorposition+=LeftBack.getCurrentPosition();
-        motorposition+=LeftFront.getCurrentPosition();
-        motorposition+=RightBack.getCurrentPosition();
-        motorposition+=RightFront.getCurrentPosition();
+        motorposition+=Math.abs(LeftBack.getCurrentPosition());
+        motorposition+=Math.abs(LeftFront.getCurrentPosition());
+        motorposition+=Math.abs(RightBack.getCurrentPosition());
+        motorposition+=Math.abs(RightFront.getCurrentPosition());
         if (Double.isNaN(motorposition/4)) return 0;
         else return motorposition/4;
     }
