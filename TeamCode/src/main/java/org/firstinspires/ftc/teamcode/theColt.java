@@ -322,7 +322,7 @@ class theColt extends LinearOpMode{
         linearSlide.setPower(1);
 
         runtime.reset();
-        while (opModeIsActive() && (runtime.seconds() < seconds || arm.isBusy() || linearSlide.isBusy()) {
+        while (opModeIsActive() && (runtime.seconds() < seconds || arm.isBusy() || linearSlide.isBusy())) {
 
             output = miniPID.getOutput(actual, target);
             if (angle>175 || angle <-175) actual = getIMUAngle(true);
@@ -679,9 +679,9 @@ class theColt extends LinearOpMode{
             RightBack.setPower(speed * Math.cos(desiredAngle-robotAngle) - rightX);
             outputTelemetry();
             if (!isLimitSwitchPressed()) hanger.setPower(.7);
+            else hanger.setPower(0);
             if (!arm.isBusy()) arm.setPower(0);
             if (!linearSlide.isBusy()) linearSlide.setPower(0);
-            else hanger.setPower(0);
             telemetry.addData("Left Front Encoder Pos:", LeftFront.getCurrentPosition());
             telemetry.addData("Right Front Encoder Pos:", RightFront.getCurrentPosition());
             telemetry.addData("Left Back Encoder Pos:", LeftBack.getCurrentPosition());
@@ -826,7 +826,7 @@ class theColt extends LinearOpMode{
         }
         sleep(.5);
     }
-    void strafeToDistanceXPID(double inch, double time) {strafeToDistanceXPID(inch,gap,0);}
+    void strafeToDistanceXPID(double inch, double time) {strafeToDistanceXPID(inch,time,0);}
     void strafeToDistanceXPID(double inch, double time, double offset)
     {
         MiniPID miniPID = new MiniPID(.055, 0.000, 0.04);
