@@ -327,7 +327,7 @@ class theColt extends LinearOpMode{
             output = miniPID.getOutput(actual, target);
             if (angle>175 || angle <-175) actual = getIMUAngle(true);
             else actual = getIMUAngle();
-            turnLeft(output);
+            turnLeft(-output);
             if (!arm.isBusy()) arm.setPower(0);
             if (!linearSlide.isBusy()) linearSlide.setPower(0);
             outputTelemetry();
@@ -550,7 +550,6 @@ class theColt extends LinearOpMode{
                         return imu.getCalibrationStatus().toString();
                     }
                 });
-
         telemetry.addLine()
                 .addData("heading", new Func<String>() {
                     @Override public String value() {
@@ -567,7 +566,6 @@ class theColt extends LinearOpMode{
                         return formatAngle(angles.angleUnit, angles.thirdAngle);
                     }
                 });
-
         telemetry.addLine()
                 .addData("grvty", new Func<String>() {
                     @Override public String value() {
@@ -759,7 +757,7 @@ class theColt extends LinearOpMode{
         linearSlide.setTargetPosition((int) (linearSlideMaxEncoder*armExtensionPercent));
         linearSlide.setPower(1);
         runtime.reset();
-        while (opModeIsActive() && (arm.isBusy() || linearSlide.isBusy()))
+        while (opModeIsActive() && arm.isBusy() && linearSlide.isBusy())
         {
             if (!arm.isBusy()) arm.setPower(0);
             if (!linearSlide.isBusy()) linearSlide.setPower(0);
@@ -859,14 +857,11 @@ class theColt extends LinearOpMode{
         miniPID.setSetpoint(0);
         miniPID.setSetpoint(target);
         miniPID.setOutputLimits(1);
-
         miniPID.setSetpointRange(40);
-
         double actual=0;
         double output=0;
         runtime.reset();
         while (opModeIsActive() && runtime.seconds()<gap) {
-
             actual = getRobotPositionY();
             output = miniPID.getOutput(actual, target);
             DriveFieldRealtiveSimple(output, (output>=0) ? 180 : 0);
@@ -916,22 +911,16 @@ class theColt extends LinearOpMode{
         miniPID.setSetpoint(0);
         miniPID.setSetpoint(x);
         miniPID.setOutputLimits(1);
-
         miniPID.setSetpointRange(40);
-
         double actualX=0;
         double outputX=0;
-
         MiniPID miniPIDY = new MiniPID(.10, 0.00, 0.05);
         miniPIDY.setSetpoint(0);
         miniPIDY.setSetpoint(y);
         miniPIDY.setOutputLimits(1);
-
         miniPIDY.setSetpointRange(40);
-
         double actualY=0;
         double outputY=0;
-
         runtime.reset();
         while (opModeIsActive() && runtime.seconds()<seconds) {
             actualX = getRobotPositionX();
