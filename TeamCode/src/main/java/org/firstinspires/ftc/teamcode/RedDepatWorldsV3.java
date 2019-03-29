@@ -61,39 +61,49 @@ public class RedDepatWorldsV3 extends theColt {
 
         lowerRobot();
 
-        DriveFieldRealtiveDistanceAndLowerArm(.4,315,.5,.2,.3);
+        DriveFieldRealtiveDistanceAndLowerArm(.6,315,.5,.2,.3);
         //DriveforLength(.5,-.4); //drive away from lander
 
         //turn to face to depot, prepare to deplot team marker
-        TurnPIDandLowerArm(325,2,.7,.7);
+        //TurnPIDandLowerArm(325,2,.7,.7);
         TurnPID(325,2);
 
-        DriveFieldRealtiveDistanceAndLowerArm(.3,315, .5,.95,.95);
+        DriveFieldRealtiveDistanceAndLowerArm(.5,315, .5,.95,.95); //strafe to depot, extend arm to deplot team marker
+        telemetry.log().add("1");
         lowerArm(.95,.95,2.5);
+        telemetry.log().add("2");
         //strafeLeft(-.3,600);
 
         outtake(1); //deploy team marker into depot
         sleep(1.0); //wait one second
         stopIntake(); //stop outtaking
-
-        DriveFieldRealtiveDistanceAndLowerArm(.3,135, .5,.9,.1);
+        lowerArm(.9,.9,1);
+        telemetry.log().add("3");
+        DriveFieldRealtiveDistanceAndLowerArm(.5,135, .5,.9,.1); //drive back
         //strafeLeft(.3,600);
 
-        turnToFaceMineral(0,325,270,.9,.1,2);
-        lowerArm(1,.1,1); //lower to grab mineral
+        turnToFaceMineral(0,325,275,.9,.1,2);
+        lowerArm(.985,.1,1); //lower to grab mineral
 
         intake(1); //intake mineral
         sleep(.2); //wait a bit
-        turnToFaceMineral(10,315, 280,1,.1,1); //turn a bit, will at least knock the gold mineral off
+        turnToFaceMineral(10,315, 285,1,.1,1); //turn a bit, will at least knock the gold mineral off
 
         //Score in lander
 
         lowerArm(.7,.5,2); //raise the arm a bit
+        telemetry.log().add("4");
 
         stopIntake(); //stop the intake, the mineral is already in there
+        telemetry.log().add("5");
 
-        TurnPIDandLowerArm(145,2,.5,.96);
-        //TurnPID(145,2);
+        //TurnPIDandLowerArm(145,2,.5,.96);
+        if (goldMineralLocation==GOLD_MINERAL_RIGHT) 
+        {
+            TurnPID(315,1);
+            TurnPID(145,1.5);
+        }
+        else TurnPID(145,2);
         lowerArm(.5,.95,2); //turn to face lander, raise are to prepare to score
 
         outtake(.8); //deploy mineral in lander
@@ -102,15 +112,16 @@ public class RedDepatWorldsV3 extends theColt {
 
         //go to creator
 
-        strafeLeft(.3,400);
+        DriveFieldRealtiveDistance(.6,315,.3);
+        //strafeLeft(.3,400);
 
         DriveFieldRealtiveDistance(.6,45,2);
         //DriveforLength(2,-.6);
 
-        TurnPID(90,2);  //turn to face wall
+        TurnPID(90,1.5);  //turn to face wall
 
-        strafeToDistanceXPID(3,2,90);
-        DriveforLength(1.5,-.6);
+        strafeToDistanceXPID(5,2,90);
+        //DriveforLength(1.5,-.6);
 
         DriveFieldRealtiveDistanceAndLowerArm(.6,90,1.5,.85,.7);
         //strafeLeft(-.6,1000);
@@ -126,12 +137,12 @@ public class RedDepatWorldsV3 extends theColt {
     }
     void turnToFaceMineral(double degreesLEFT, double degreesCENTER, double degreesRIGHT, double armlowerPercent, double armExtendpercent, double time)
     {
-        if (goldMineralLocation==GOLD_MINERAL_RIGHT) TurnPIDandLowerArm(degreesRIGHT, time,armlowerPercent,armExtendpercent);
-        else if (goldMineralLocation==GOLD_MINERAL_CENTER) TurnPIDandLowerArm(degreesCENTER, time,armlowerPercent,armExtendpercent);
-        else if (goldMineralLocation==GOLD_MINERAL_LEFT) TurnPIDandLowerArm(degreesLEFT, time,armlowerPercent,armExtendpercent);
-//        if (goldMineralLocation==GOLD_MINERAL_RIGHT) TurnPID(degreesRIGHT, time);
-//        else if (goldMineralLocation==GOLD_MINERAL_CENTER) TurnPID(degreesCENTER, time);
-//        else if (goldMineralLocation==GOLD_MINERAL_LEFT) TurnPID(degreesLEFT, time);
-//        lowerArm(armlowerPercent, armExtendpercent, time);
+        // if (goldMineralLocation==GOLD_MINERAL_RIGHT) TurnPIDandLowerArm(degreesRIGHT, time,armlowerPercent,armExtendpercent);
+        // else if (goldMineralLocation==GOLD_MINERAL_CENTER) TurnPIDandLowerArm(degreesCENTER, time,armlowerPercent,armExtendpercent);
+        // else if (goldMineralLocation==GOLD_MINERAL_LEFT) TurnPIDandLowerArm(degreesLEFT, time,armlowerPercent,armExtendpercent);
+        if (goldMineralLocation==GOLD_MINERAL_RIGHT) TurnPID(degreesRIGHT, time);
+        else if (goldMineralLocation==GOLD_MINERAL_CENTER) TurnPID(degreesCENTER, time);
+        else if (goldMineralLocation==GOLD_MINERAL_LEFT) TurnPID(degreesLEFT, time);
+        lowerArm(armlowerPercent, armExtendpercent, time);
     }
 }
