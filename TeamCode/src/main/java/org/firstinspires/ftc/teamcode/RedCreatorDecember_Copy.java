@@ -11,7 +11,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
  * Created by Drew from 11874 on 10/20/2018.
  */
 
-@Autonomous(name = "Creater 2019")
+@Autonomous(name = "Creater Worlds")
 public class RedCreatorDecember_Copy extends theColt {
 
     @Override
@@ -78,10 +78,10 @@ public class RedCreatorDecember_Copy extends theColt {
         lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.CP1_HEARTBEAT_FAST);
         sleep(.3);
         DriveforLength(1.1, -.3); //drive forward
-        sleep(.3);
+        //sleep(.3);
         driveIntoMineralCreator(45, goldMineralLocation);
         TurnPID(90, 1); //used to turn to 180 degrees, there's issues if it's one turn so it will be two turns
-        TurnPID(180, 3);
+        TurnPID(180, 2);
         sleep(.3);
         //if (goldMineralLocation==GOLD_MINERAL_LEFT) DriveFieldRealtiveDistance(1, 90, 3.8);
         //if (goldMineralLocation==GOLD_MINERAL_RIGHT)
@@ -92,15 +92,16 @@ public class RedCreatorDecember_Copy extends theColt {
         //      DriveFieldRealtiveDistance(1, 90, .4);
         //}
         //else 
-        DriveFieldRealtiveDistance(1, 90, 3); 
+        DriveFieldRealtiveDistance(1, 85, 3); 
         TurnPID(150, .5);
         deployTeamMarker(); //lines below drive to the crator
-        TurnPID(90, 1);
-        TurnPID(10, 2);
+        TurnPID(180, 1);
+        DriveFieldRealtiveDistance(.5,0,.7);
+        //TurnPID(10, 1.5);
         //if (goldMineralLocation==GOLD_MINERAL_LEFT)  DriveFieldRealtiveDistance(.9, 280, 5.3);
-        DriveFieldRealtiveDistance(.9, 280, 4.2);
+        DriveFieldRealtiveDistance(1, 275, 4.2);
         //DriveToPointPID(46,3,3);
-        DriveFieldRealtiveDistance(.2, 280, .4);
+        DriveFieldRealtiveDistance(.2, 300, .85);
         teamMarker.setPosition(1);
         stopRobot();
         writeFile(GYRO_ANGLE_FILE_NAME, getIMUAngle()-90);
@@ -116,3 +117,4 @@ public class RedCreatorDecember_Copy extends theColt {
 
     }
 }
+
