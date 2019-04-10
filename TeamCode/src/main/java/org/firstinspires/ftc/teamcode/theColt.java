@@ -45,7 +45,7 @@ class theColt extends LinearOpMode{
     final double encoderTicksPerRotation=510;
     final double circumferenceOfWheel=12.566370614359172;
 
-    final double linearSlideMaxEncoder=-3850;
+    final double linearSlideMaxEncoder=-4500;
     final double armMaxEncoder=3850;
     double angleZzeroValue=0;
 
@@ -160,10 +160,10 @@ class theColt extends LinearOpMode{
             lights=hardwareMap.get(RevBlinkinLedDriver.class, "lights");
             limitSwitch=hardwareMap.get(AnalogInput.class, "limit switch");
             colorSensor=hardwareMap.get(ColorSensor.class,"arm color sensor");
-            arm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            //arm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             //arm.setTargetPosition(.9);
-            zeroLinearSlide();
-            zeroArm();
+            // zeroLinearSlide();
+            // zeroArm();
             mineralArm.setPosition(0);
             teamMarker.setPosition(1);
         }
@@ -339,10 +339,10 @@ class theColt extends LinearOpMode{
     }
     void strafeLeft(double power, int target)
     {
-         DriveLeft(power);
-         zeroEncoders();
-         while (Math.abs(RightFront.getCurrentPosition())<Math.abs(target) && opModeIsActive());
-         stopRobot();
+        DriveLeft(power);
+        zeroEncoders();
+        while (Math.abs(RightFront.getCurrentPosition())<Math.abs(target) && opModeIsActive());
+        stopRobot();
     }
     void strafeLeftAndLowerArm(double power, int target,double armLoweredPercent, double armExtensionPercent)
     {
@@ -624,6 +624,31 @@ class theColt extends LinearOpMode{
         telemetry.log().add("Right Back Encoder Pos:"+ RightBack.getCurrentPosition());
         telemetry.log().add("Done with Drive for length");
     }
+    void DriveFieldRealtiveDistanceAndTurnPID(double power, double angleInDegrees, double feet, double targetAngle, double rightX)
+    {
+        zeroEncoders();
+        double inches = feet*12;
+        double encodersPerInch = encoderTicksPerRotation/circumferenceOfWheel;
+        double drivingDistanceInEncoderTicks = encodersPerInch*inches;
+        double speed = power;
+        double desiredAngle =Math.toRadians(angleInDegrees)-Math.PI / 4;
+        //double robotAngle = Math.toRadians(getIMUAngle());
+        telemetry.log().add("averge encoder" + averageDrivetrainEncoder());
+        while (opModeIsActive() && Math.abs(averageDrivetrainEncoder())<Math.abs(drivingDistanceInEncoderTicks))
+        {
+            if (getIMUAngle()>=targetAngle+5) rightX=Math.abs(rightX);
+            else if (getIMUAngle()<=targetAngle-5) rightX=-Math.abs(rightX);
+            else rightX=0;
+            double robotAngle = Math.toRadians(getIMUAngle());
+            LeftFront.setPower(speed * Math.cos(desiredAngle-robotAngle) + rightX);
+            RightFront.setPower(speed * Math.sin(desiredAngle-robotAngle) - rightX);
+            LeftBack.setPower(speed * Math.sin(desiredAngle-robotAngle) + rightX);
+            RightBack.setPower(speed * Math.cos(desiredAngle-robotAngle) - rightX);
+            outputTelemetry();
+        }
+        stopRobot();
+
+    }
     void DriveFieldRealtiveDistance(double power, double angleInDegrees, double feet)
     {
         zeroEncoders();
@@ -757,7 +782,7 @@ class theColt extends LinearOpMode{
         linearSlide.setTargetPosition((int) (linearSlideMaxEncoder*armExtensionPercent));
         linearSlide.setPower(1);
         runtime.reset();
-        while (opModeIsActive() && arm.isBusy() && linearSlide.isBusy())
+        while (opModeIsActive() && (arm.isBusy() || linearSlide.isBusy()) && runtime.seconds()<time)
         {
             if (!arm.isBusy()) arm.setPower(0);
             if (!linearSlide.isBusy()) linearSlide.setPower(0);
@@ -801,29 +826,58 @@ class theColt extends LinearOpMode{
         {
             tfod.shutdown();
         }
-        if (goldMineralLocation!=GOLD_MINERAL_CENTER) TurnPID(0, 3);
+        //if (goldMineralLocation!=GOLD_MINERAL_CENTER) TurnPID(0, 3);
         if (goldMineralLocation==GOLD_MINERAL_RIGHT)
         {
-            DriveToPointPID(24,40,2);
-            DriveToPointPID(30,40,2);
-            DriveToPointPID(63,3,4);
+            DriveFieldRealtiveDistance(.6,225,1);
+            DriveforLength(1, -.5);
+            DriveforLength(1, .5);
+            DriveFieldRealtiveDistance(.6,45,5);
         }
         else if (goldMineralLocation==GOLD_MINERAL_LEFT)
         {
-            DriveToPointPID(46,20, 1.5);
-            DriveToPointPID(41,20, 1.5);
-            DriveToPointPID(49,15, 1);
-            DriveToPointPID(63,3,2);
+            DriveFieldRealtiveDistance(.6,45,1.2);
+            DriveforLength(1, -.5);
+            DriveforLength(1, .5);
+            DriveFieldRealtiveDistance(.6,45,3);
         }
         else if (goldMineralLocation==GOLD_MINERAL_CENTER)
         {
             DriveforLength(1, -.5);
             DriveforLength(1, .5);
-            TurnPID(0,3);
-            DriveToPointPID(63,3,3.5);
+            DriveFieldRealtiveDistance(.6,45,4);
         }
         sleep(.5);
     }
+    // void driveIntoMineralCreator(double angleParrelToMinerals, int mineralLocation)
+    // {
+    //     if (tfod!=null)
+    //     {
+    //         tfod.shutdown();
+    //     }
+    //     if (goldMineralLocation!=GOLD_MINERAL_CENTER) TurnPID(0, 3);
+    //     if (goldMineralLocation==GOLD_MINERAL_RIGHT)
+    //     {
+    //         DriveToPointPID(24,40,2);
+    //         DriveToPointPID(30,40,2);
+    //         DriveToPointPID(63,3,4);
+    //     }
+    //     else if (goldMineralLocation==GOLD_MINERAL_LEFT)
+    //     {
+    //         DriveToPointPID(46,20, 1.5);
+    //         DriveToPointPID(41,20, 1.5);
+    //         DriveToPointPID(49,15, 1);
+    //         DriveToPointPID(63,3,2);
+    //     }
+    //     else if (goldMineralLocation==GOLD_MINERAL_CENTER)
+    //     {
+    //         DriveforLength(1, -.5);
+    //         DriveforLength(1, .5);
+    //         TurnPID(0,3);
+    //         DriveToPointPID(63,3,3.5);
+    //     }
+    //     sleep(.5);
+    // }
     void strafeToDistanceXPID(double inch, double time) {strafeToDistanceXPID(inch,time,0);}
     void strafeToDistanceXPID(double inch, double time, double offset)
     {
@@ -994,6 +1048,35 @@ class theColt extends LinearOpMode{
         LeftBack.setPower(power * Math.sin(angleInRadians-robotAngle) + rightX);
         RightBack.setPower(power * Math.cos(angleInRadians-robotAngle) - rightX);
 
+    }
+    public void oldTurn(double targetAngle, double motorPower, double leeway)
+    {
+        if (getIMUAngle()>targetAngle-1 && getIMUAngle()<targetAngle+1) return;
+        leeway=Math.abs(leeway); //make sure the leeway is positive
+        double angleDiference=targetAngle-getIMUAngle();
+        if (targetAngle>=180-leeway) targetAngle-=leeway;
+        else if (targetAngle<=-180+leeway) targetAngle+=leeway;
+        if (Math.abs(angleDiference)>180) //make the angle difference less then 180 to remove unnecessary turning
+        {
+            angleDiference+=(angleDiference>=0) ? -360 : 360;
+        }
+        if (angleDiference>0) motorPower*=-1; //turn right
+        turnLeft(motorPower);
+        boolean keepTurning=false;
+        if (angleDiference>0 && targetAngle<0 && getIMUAngle()>0) keepTurning=true;
+        else if (angleDiference<0 && targetAngle>0 && getIMUAngle()<0) keepTurning=true;
+
+        while ((keepTurning && opModeIsActive()) || (opModeIsActive() && (angleDiference>=0) ? getIMUAngle() <= targetAngle-leeway : getIMUAngle() >= targetAngle+leeway))
+        {
+            if (angleDiference>0 && targetAngle<0 && getIMUAngle()<0) keepTurning=false;
+            else if (angleDiference<0 && targetAngle>0 && getIMUAngle()>0) keepTurning=false;
+            telemetry.addData("IMU angle", getIMUAngle());
+            telemetry.addData("target angle",targetAngle);
+            telemetry.addData("angle difference", angleDiference);
+            telemetry.addData("leeway", leeway);
+            outputTelemetry();
+        }
+        stopRobot();
     }
     public void setOffset(double RobotOffsetX, double RobotOffsetY)
     {
