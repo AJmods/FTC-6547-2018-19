@@ -30,6 +30,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 
+import org.firstinspires.ftc.robotcore.external.Func;
+
 import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 
 import java.util.List;
@@ -537,9 +539,10 @@ class theColt extends LinearOpMode{
             // three times the necessary expense.
             angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
             gravity  = imu.getGravity();
+            thing = imu.getVelocity();
         }
         });
-        /*telemetry.addLine()
+        telemetry.addLine()
                 .addData("status", new Func<String>() {
                     @Override public String value() {
                         return imu.getSystemStatus().toShortString();
@@ -579,7 +582,7 @@ class theColt extends LinearOpMode{
                                         + gravity.yAccel*gravity.yAccel
                                         + gravity.zAccel*gravity.zAccel));
                     }
-                });*/
+                });
     }
 
     //----------------------------------------------------------------------------------------------
