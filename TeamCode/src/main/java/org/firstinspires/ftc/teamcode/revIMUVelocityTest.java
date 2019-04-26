@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode.DrewsPrograms;
+package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
@@ -58,9 +58,9 @@ import java.util.Locale;
  *
  * @see <a href="http://www.adafruit.com/products/2472">Adafruit IMU</a>
  */
-@TeleOp(name = "Sensor: BNO055 IMU", group = "Sensor")
-@Disabled                            // Comment this out to add to the opmode list
-public class revIMUVelocityTest extends theColt
+@TeleOp(name = "Rev Veliocty test", group = "Sensor")
+// Comment this out to add to the opmode list
+public class REVIMUTest extends LinearOpMode
     {
     //----------------------------------------------------------------------------------------------
     // State
@@ -90,7 +90,7 @@ public class revIMUVelocityTest extends theColt
 
     @Override public void runOpMode() {
 
-        INIT(hardwareMap);
+       // INIT(hardwareMap);
         // Set up the parameters with which we will use our IMU. Note that integration
         // algorithm here just reports accelerations to the logcat log; it doesn't actually
         // provide positional information.
@@ -111,58 +111,71 @@ public class revIMUVelocityTest extends theColt
         imu.initialize(parameters);
         // Set up our telemetry dashboard
         composeTelemetry();
+        telemetry.log().add("ready to start");
         // Wait until we're told to go
         waitForStart();
 
         // Start the logging of measured acceleration
         imu.startAccelerationIntegration(new Position(DistanceUnit.INCH,0,0,0,0), new Velocity(DistanceUnit.INCH,0,0,0,0), 1000);
 
+        double velocityX=0;
+        double velocityY=0;
+        double velocityZ=0;
+        double oldTime=System.currentTimeMillis();
+        double newTime=System.currentTimeMillis();
         // Loop and update the dashboard
         while (opModeIsActive()) {
+            newTime=System.currentTimeMillis();
+            double time = (newTime-oldTime)/1000;
+            velocityX+=gravity.xAccel*time;
+            velocityY+=gravity.yAccel*time;
+            velocityZ+=gravity.xAccel*time;
+            // if (feildRealtive)
+            // {
+            //     //if (gameTime.seconds()<90) lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.CP1_BREATH_SLOW);
+            //     double speed = Math.hypot(gamepad1.left_stick_x, gamepad1.left_stick_y);
+            //     double LeftStickAngle = Math.atan2(-gamepad1.left_stick_y, gamepad1.left_stick_x) - Math.PI / 4;
+            //     //if (offset) LeftStickAngle = Math.atan2(-gamepad1.left_stick_y, gamepad1.left_stick_x) - (Math.PI / 4)+Math.toRadians(45);
+            //     double robotAngle = Math.toRadians(getIMUAngle());
+            //     double rightX=gamepad1.right_stick_x;
+            //     leftFrontPower =  speed * Math.cos(LeftStickAngle-robotAngle) + rightX;
+            //     rightFrontPower =  speed * Math.sin(LeftStickAngle-robotAngle) - rightX;
+            //     leftBackPower =  speed * Math.sin(LeftStickAngle-robotAngle) + rightX;
+            //     rightBackPower =  speed * Math.cos(LeftStickAngle-robotAngle) - rightX;
 
-            if (feildRealtive)
-            {
-                //if (gameTime.seconds()<90) lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.CP1_BREATH_SLOW);
-                double speed = Math.hypot(gamepad1.left_stick_x, gamepad1.left_stick_y);
-                double LeftStickAngle = Math.atan2(-gamepad1.left_stick_y, gamepad1.left_stick_x) - Math.PI / 4;
-                //if (offset) LeftStickAngle = Math.atan2(-gamepad1.left_stick_y, gamepad1.left_stick_x) - (Math.PI / 4)+Math.toRadians(45);
-                double robotAngle = Math.toRadians(getIMUAngle());
-                double rightX=gamepad1.right_stick_x;
-                leftFrontPower =  speed * Math.cos(LeftStickAngle-robotAngle) + rightX;
-                rightFrontPower =  speed * Math.sin(LeftStickAngle-robotAngle) - rightX;
-                leftBackPower =  speed * Math.sin(LeftStickAngle-robotAngle) + rightX;
-                rightBackPower =  speed * Math.cos(LeftStickAngle-robotAngle) - rightX;
+            //     if (gamepad1.x && !isGamepadPressed)
+            //     {
+            //         feildRealtive = false;
+            //         isGamepadPressed=true;
+            //     } else if (!gamepad1.x && isGamepadPressed) isGamepadPressed=false;
 
-                if (gamepad1.x && !isGamepadPressed)
-                {
-                    feildRealtive = false;
-                    isGamepadPressed=true;
-                } else if (!gamepad1.x && isGamepadPressed) isGamepadPressed=false;
+            // }
+            // else
+            // {
+            //     //if (gameTime.seconds()<90) lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.HOT_PINK);
+            //     leftFrontPower=-gamepad1.left_stick_y + gamepad1.left_stick_x + gamepad1.right_stick_x;
+            //     rightFrontPower=-gamepad1.left_stick_y - gamepad1.left_stick_x - gamepad1.right_stick_x;
+            //     leftBackPower=-gamepad1.left_stick_y - gamepad1.left_stick_x + gamepad1.right_stick_x;
+            //     rightBackPower=-gamepad1.left_stick_y + gamepad1.left_stick_x - gamepad1.right_stick_x;
 
-            }
-            else
-            {
-                //if (gameTime.seconds()<90) lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.HOT_PINK);
-                leftFrontPower=-gamepad1.left_stick_y + gamepad1.left_stick_x + gamepad1.right_stick_x;
-                rightFrontPower=-gamepad1.left_stick_y - gamepad1.left_stick_x - gamepad1.right_stick_x;
-                leftBackPower=-gamepad1.left_stick_y - gamepad1.left_stick_x + gamepad1.right_stick_x;
-                rightBackPower=-gamepad1.left_stick_y + gamepad1.left_stick_x - gamepad1.right_stick_x;
+            //     if (gamepad1.x && !isGamepadPressed)
+            //     {
+            //         feildRealtive = true;
+            //         isGamepadPressed=true;
+            //     } else if (!gamepad1.x && isGamepadPressed) isGamepadPressed=false;
 
-                if (gamepad1.x && !isGamepadPressed)
-                {
-                    feildRealtive = true;
-                    isGamepadPressed=true;
-                } else if (!gamepad1.x && isGamepadPressed) isGamepadPressed=false;
+            // }
+            // LeftFront.setPower(leftFrontPower*speedModifer);
+            // RightFront.setPower(rightFrontPower*speedModifer);
+            // LeftBack.setPower(leftBackPower*speedModifer);
+            // RightBack.setPower(rightBackPower*speedModifer);
 
-            }
-            LeftFront.setPower(leftFrontPower*speedModifer);
-            RightFront.setPower(rightFrontPower*speedModifer);
-            LeftBack.setPower(leftBackPower*speedModifer);
-            RightBack.setPower(rightBackPower*speedModifer);
-
-            telemetry.addData("Velocity", velocity.toString());
+            telemetry.addData("Velocity X", velocityX);
+            telemetry.addData("Velocity Y", velocityX);
+            telemetry.addData("Velocity Z", velocityX);
             telemetry.addData("Position", position.toString());
             telemetry.update();
+            oldTime=System.currentTimeMillis();
         }
     }
     double getRobotPositionXIMU() {return position.x;}
@@ -182,7 +195,7 @@ public class revIMUVelocityTest extends theColt
                 // to do that in each of the three items that need that info, as that's
                 // three times the necessary expense.
                 angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-                gravity  = imu.getGravity();
+                gravity  = imu.getAcceleration();
                 velocity = imu.getVelocity();
                 position = imu.getPosition();
                 }
